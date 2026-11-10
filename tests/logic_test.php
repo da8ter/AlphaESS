@@ -1,0 +1,119 @@
+<?php
+
+declare(strict_types=1);
+
+// Reine Logik: Register, Gateway-Antwort, Zeitraster, Cloud-API und Auftragsliste.
+require __DIR__ . '/bootstrap.php';
+foreach (['AlphaDataFlow', 'AlphaRegisters', 'AlphaModbusGateway', 'AlphaTimeGrid', 'AlphaCloudApi', 'AlphaCloudQueue'] as $class) {
+    require_once __DIR__ . "/../libs/$class.php";
+}
+
+$reg = require __DIR__ . '/fixtures/registers.php';
+$block = static function (string $name) use ($reg): string {
+    $def = AlphaRegisters::BLOCKS[$name];
+    $out = '';
+    for ($i = 0; $i < $def['quantity']; $i++) {
+        $out .= pack('n', $reg[$def['address'] + $i]);
+    }
+    return $out;
+};
+
+section('Register dekodieren');
+$grid = AlphaRegisters::decode('grid', $block('grid'));
+check($grid['grid_feed_in_energy'] === 1234.56 && $grid['grid_consumption_energy'] === 2345.67, 'Zähler als uint32 mit 0,01 kWh');
+check($grid['grid_power'] === -500 && $grid['grid_power_l1'] === -400 && $grid['grid_power_l2'] === 150, 'Leistungen als int32 mit Vorzeichen');
+$bat = AlphaRegisters::decode('battery', $block('battery'));
+check($bat['battery_soc'] === 65.5 && $bat['battery_voltage'] === 51.2 && $bat['battery_current'] === -10.5 && $bat['battery_power'] === -1500,
+    'Speicher: SOC 65,5 %, 51,2 V, -10,5 A, -1500 W (int16 mit Vorzeichen)');
+$inv = AlphaRegisters::decode('inverter', $block('inverter'));
+check($inv['inverter_power'] === 2000 && $inv['pv1_power'] === 1800 && $inv['pv2_power'] === 1700 && $inv['pv_energy'] === 9876.5 && $inv['inverter_mode'] === 2,
+    'Wechselrichter: Leistung, Strings, Ertrag, Modus (letztes Register des Blocks)');
+check(AlphaRegisters::decode('grid', substr($block('grid'), 2)) === [] && AlphaRegisters::decode('nix', '') === [], 'falsche Länge oder unbekannter Block ergibt nichts');
+
+section('Abgeleitete Werte');
+$all = AlphaRegisters::derive($grid + $bat + $inv + AlphaRegisters::decode('pvmeter', $block('pvmeter')));
+check($all['pv_power'] === 3500, 'PV-Leistung ist die Summe der Strings');
+check($all['load_power'] === 1500, 'Verbrauch = Netz (-500) + Wechselrichter (2000) + PV-Zähler (0)');
+check($all['grid_frequency'] === 50.01 && !isset($all['grid_frequency_raw']), 'Frequenz 0,01 Hz erkannt');
+check(AlphaRegisters::derive(['grid_frequency_raw' => 499])['grid_frequency'] === 49.9, 'Frequenz 0,1 Hz erkannt');
+check($all['battery_state'] === 1, 'Speicher lädt bei negativer Leistung');
+check(AlphaRegisters::derive(['battery_power' => 800])['battery_state'] === 2 && AlphaRegisters::derive(['battery_power' => -10])['battery_state'] === 0, 'entlädt bei positiver Leistung, ruht unter 30 W');
+check(!isset(AlphaRegisters::derive($bat)['load_power']) && !isset(AlphaRegisters::derive($bat)['pv_power']), 'ohne Netz- und Wechselrichterblock kein errechneter Verbrauch');
+$parts = AlphaRegisters::split($all);
+check(isset($parts['battery']['battery_soc'], $parts['battery']['battery_state']) && !isset($parts['inverter']['battery_soc']) && isset($parts['inverter']['pv_power']),
+    'Aufteilung auf Wechselrichter und Speicher');
+
+section('Antwort des ModBus Gateways');
+$raw = pack('CC', 3, 4) . "\x00\x01\x00\x02";
+check(AlphaModbusGateway::payload($raw, 2) === "\x00\x01\x00\x02", 'roh: zwei Kopfbytes entfernt');
+check(AlphaModbusGateway::payload(strtoupper(bin2hex($raw)), 2) === "\x00\x01\x00\x02", 'hex-kodierte Antwort wird ebenfalls gelesen');
+check(AlphaModbusGateway::payload(false, 2) === null && AlphaModbusGateway::payload('', 2) === null && AlphaModbusGateway::payload($raw, 3) === null,
+    'false, leer und falsche Länge ergeben null');
+$req = json_decode(AlphaModbusGateway::request(16, 19), true);
+check($req === ['DataID' => AlphaDataFlow::MODBUS_TX, 'Function' => 3, 'Address' => 16, 'Quantity' => 19, 'Data' => ''], 'Lesepaket wie gemessen');
+
+section('Zeitraster');
+check(AlphaTimeGrid::snap('06:07') === '06:00' && AlphaTimeGrid::snap('06:08') === '06:15' && AlphaTimeGrid::snap('23:53') === '23:45', 'rundet auf 15 Minuten, 23:53 bleibt am selben Tag');
+check(AlphaTimeGrid::snap('24:00') === '00:00' && AlphaTimeGrid::snap('quatsch') === '00:00' && !AlphaTimeGrid::valid('7:5'), 'ungültige Zeiten werden 00:00');
+$ts = AlphaTimeGrid::toTimestamp('13:30');
+check(date('Y-m-d H:i', $ts) === '2000-01-01 13:30' && AlphaTimeGrid::toClock($ts) === '13:30', 'Uhrzeit liegt auf dem festen Wintertag und kommt zurück');
+check(AlphaTimeGrid::toClock((int) mktime(17, 52, 30, 7, 14, 2026)) === '17:45', 'Zeitstempel eines Sommertags liefert dieselbe Ortszeit');
+
+section('Cloud-API');
+check(AlphaCloudApi::sign('app', 'secret', 1700000000) === hash('sha512', 'appsecret1700000000'), 'Signatur = sha512(appId + appSecret + timeStamp)');
+$headers = AlphaCloudApi::headers('app', 'secret', 1700000000);
+check($headers[0] === 'appId: app' && $headers[1] === 'timeStamp: 1700000000' && str_starts_with($headers[2], 'sign: '), 'Kopfzeilen appId, timeStamp, sign');
+$r = AlphaCloudApi::build('evstatus:EV 1/2', 'AL1');
+check($r['method'] === 'GET' && $r['url'] === AlphaCloudApi::BASE_URL . '/getEvChargerStatusBySn?sysSn=AL1&evchargerSn=EV+1%2F2' && $r['body'] === null, 'Leseaufruf mit kodierter Seriennummer');
+$r = AlphaCloudApi::build('set_control:EV1', 'AL1', ['start' => true]);
+check($r['method'] === 'POST' && json_decode((string) $r['body'], true) === ['sysSn' => 'AL1', 'evchargerSn' => 'EV1', 'controlMode' => 1], 'Wallbox starten');
+$full = ['grid_charge' => true, 'charge_limit' => 90, 'charge_start1' => '01:00', 'charge_end1' => '05:00', 'charge_start2' => '00:00', 'charge_end2' => '00:00'];
+$r = AlphaCloudApi::build('set_charge', 'AL1', $full);
+check(json_decode((string) $r['body'], true) === ['sysSn' => 'AL1', 'gridCharge' => 1, 'batHighCap' => 90, 'timeChaf1' => '01:00', 'timeChae1' => '05:00', 'timeChaf2' => '00:00', 'timeChae2' => '00:00'],
+    'Ladekonfiguration mit allen Feldern der Cloud');
+check(AlphaCloudApi::build('unbekannt', 'AL1') === null, 'unbekannter Auftrag ergibt nichts');
+check(AlphaCloudApi::fromCloud('charge', ['gridCharge' => 1, 'batHighCap' => 90.0, 'timeChaf1' => '01:00', 'timeChae1' => '05:00:00', 'timeChaf2' => '00:00', 'timeChae2' => '00:00']) === $full,
+    'Konfiguration aus der Cloud wird neutral (bool, int, HH:mm)');
+check(AlphaCloudApi::fromCloud('charge', ['gridCharge' => 1]) === [] && AlphaCloudApi::fromCloud('charge', null) === [], 'unvollständige Antwort ergibt nichts');
+check(AlphaCloudApi::configOf('discharge_limit') === 'discharge' && AlphaCloudApi::configOf('charge_end2') === 'charge' && AlphaCloudApi::configOf('x') === '', 'Zuordnung der Einstellungen');
+$ok = AlphaCloudApi::parse(200, '{"code":200,"msg":"Success","data":{"a":1}}');
+$err = AlphaCloudApi::parse(200, '{"code":6007,"msg":"x","data":null}');
+check($ok['ok'] && $ok['data'] === ['a' => 1] && !$err['ok'] && $err['code'] === 6007 && AlphaCloudApi::isAuthError(6007) && !AlphaCloudApi::isAuthError(6053), 'Erfolg und Fehlercode erkannt');
+check(AlphaCloudApi::parse(0, '', 'timeout')['error'] === 'timeout' && !AlphaCloudApi::parse(502, '<html>')['ok'], 'Verbindungsfehler und Nicht-JSON sind Fehler');
+
+section('Auftragsliste');
+$s = AlphaCloudQueue::fresh();
+$reads = ['a' => 60, 'b' => 300];
+check(AlphaCloudQueue::next($s, $reads, 1000) === 'a', 'nie gelaufene Aufträge sind fällig, der erste zuerst');
+$s = AlphaCloudQueue::done($s, 'a', 1000, false);
+check(AlphaCloudQueue::next($s, $reads, 1005) === null && AlphaCloudQueue::next($s, $reads, 1010) === 'b', 'Mindestabstand 10 s, dann der nächste');
+$s = AlphaCloudQueue::done($s, 'b', 1010, false);
+check(AlphaCloudQueue::next($s, $reads, 1030) === null && AlphaCloudQueue::next($s, $reads, 1060) === 'a', 'erst wieder nach dem Intervall');
+$s = AlphaCloudQueue::done($s, 'a', 1060, true);
+check($s['nextAllowed'] === 1120 && ($s['last']['a'] ?? 0) === 1000, 'zu viele Anfragen: 60 s Pause, der Auftrag gilt nicht als gelaufen');
+$s = AlphaCloudQueue::done($s, 'a', 1120, true);
+check($s['nextAllowed'] === 1240, 'Pause verdoppelt sich');
+$s = AlphaCloudQueue::done($s, 'a', 1240, false);
+check($s['backoff'] === 0 && $s['nextAllowed'] === 1250, 'Erfolg setzt die Drosselung zurück');
+$s = AlphaCloudQueue::enqueue($s, 'set_x', ['p' => 1], 1300, 20);
+$s = AlphaCloudQueue::enqueue($s, 'set_x', ['q' => 2], 1310, 20);
+check($s['pending']['set_x']['args'] === ['p' => 1, 'q' => 2] && AlphaCloudQueue::next($s, [], 1325) === null && AlphaCloudQueue::next($s, [], 1330) === 'set_x',
+    'Schreibaufträge werden gebündelt und warten die Ruhezeit ab der letzten Änderung ab');
+check(AlphaCloudQueue::next($s, $reads, 1400, ['set_x']) === 'a' && AlphaCloudQueue::next($s, $reads, 1400) === 'set_x', 'gesperrter Schreibauftrag lässt Leseaufträge vor, sonst geht Schreiben vor');
+$s = AlphaCloudQueue::done($s, 'a', 1390, false);
+$s = AlphaCloudQueue::force($s, 'b', 1405);
+check(AlphaCloudQueue::next($s, $reads, 1404, ['set_x']) === null && AlphaCloudQueue::next($s, $reads, 1405, ['set_x']) === 'b', 'erzwungenes Lesen kommt zu seinem Zeitpunkt, nicht vorher');
+$f = AlphaCloudQueue::done($s, 'b', 1405, false, false);
+check($f['force']['b'] === 1465 && !isset(AlphaCloudQueue::done($s, 'b', 1405, false, true)['force']['b']), 'scheitert ein erzwungenes Lesen, wird es nach 60 s wiederholt');
+[$shown, $s] = AlphaCloudQueue::overlay($s, 'set_x', ['p' => 0, 'q' => 0, 'r' => 9], 1400);
+check($shown === ['p' => 1, 'q' => 2, 'r' => 9] && isset($s['pending']['set_x']), 'ungesendeter Sollwert überdeckt den gelesenen Stand');
+$s = AlphaCloudQueue::sent($s, 'set_x', 1400);
+check(AlphaCloudQueue::next($s, [], 1500) === null, 'gesendeter Auftrag läuft nicht noch einmal');
+[$shown, $s2] = AlphaCloudQueue::overlay($s, 'set_x', ['p' => 0, 'q' => 2, 'r' => 9], 1420);
+check($shown['p'] === 1 && isset($s2['pending']['set_x']), 'alter Stand kurz nach dem Schreiben: Sollwert bleibt stehen');
+[$shown, $s2] = AlphaCloudQueue::overlay($s, 'set_x', ['p' => 1, 'q' => 2, 'r' => 9], 1420);
+check($shown['p'] === 1 && !isset($s2['pending']['set_x']), 'bestätigter Stand räumt den Auftrag ab');
+[$shown, $s2] = AlphaCloudQueue::overlay($s, 'set_x', ['p' => 0, 'q' => 2, 'r' => 9], 1521);
+check($shown['p'] === 0 && !isset($s2['pending']['set_x']), 'nach 120 s ohne Bestätigung gilt der gelesene Stand');
+
+done();
