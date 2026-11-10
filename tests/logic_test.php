@@ -79,6 +79,9 @@ check(AlphaCloudApi::configOf('discharge_limit') === 'discharge' && AlphaCloudAp
 $ok = AlphaCloudApi::parse(200, '{"code":200,"msg":"Success","data":{"a":1}}');
 $err = AlphaCloudApi::parse(200, '{"code":6007,"msg":"x","data":null}');
 check($ok['ok'] && $ok['data'] === ['a' => 1] && !$err['ok'] && $err['code'] === 6007 && AlphaCloudApi::isAuthError(6007) && !AlphaCloudApi::isAuthError(6053), 'Erfolg und Fehlercode erkannt');
+check(AlphaCloudApi::parse(200, '{"code":7001,"info":"aus info","data":null}')['error'] === 'aus info' && AlphaCloudApi::parse(200, '{"code":7001,"msg":"aus msg"}')['error'] === 'aus msg'
+    && AlphaCloudApi::parse(200, '{"code":7001}')['error'] === 'Error 7001', 'Fehlertext unbekannter Codes aus msg oder info');
+check(AlphaCloudApi::parse(200, '{"code":6012,"info":"x"}')['error'] === 'The AppID is missing' && AlphaCloudApi::isAuthError(6012), 'fehlende AppID hat einen eigenen Text');
 check(AlphaCloudApi::parse(0, '', 'timeout')['error'] === 'timeout' && !AlphaCloudApi::parse(502, '<html>')['ok'], 'Verbindungsfehler und Nicht-JSON sind Fehler');
 
 section('Auftragsliste');

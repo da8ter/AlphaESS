@@ -113,7 +113,8 @@ final class FakeAlphaCloud
                 }
                 return $list;
             case 'GET getEvChargerStatusBySn':
-                return ['evchargerStatus' => $this->wallboxes[(string) $p['evchargerSn']]['status'] ?? 0];
+                // Laut Handbuch des Herstellers ist data hier eine Liste.
+                return [['evchargerStatus' => $this->wallboxes[(string) $p['evchargerSn']]['status'] ?? 0]];
             case 'GET getEvChargerCurrentsBySn':
                 return $this->read('current', ['currentsetting' => $this->amps], $now);
             case 'GET getLastPowerData':

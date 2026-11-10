@@ -5,7 +5,8 @@ declare(strict_types=1);
 /*
  * Alpha ESS Open API: Signatur, Anfragen je Auftrag und Auswertung der Antworten.
  * Reine Logik ohne Netz. Quelle der Endpunkte: Postman-Sammlung und Demo des Herstellers
- * (github.com/alphaess-developer/alphacloud_open_api).
+ * (github.com/alphaess-developer/alphacloud_open_api), abgeglichen mit dem Handbuch im
+ * Entwicklerportal (Stand 10.11.2026).
  */
 final class AlphaCloudApi
 {
@@ -23,6 +24,9 @@ final class AlphaCloudApi
         6007 => 'Signature verification failed',
         6008 => 'Setting failed',
         6009 => 'IP whitelist verification failed',
+        6010 => 'The signature is missing',
+        6011 => 'The timestamp is missing',
+        6012 => 'The AppID is missing',
         6016 => 'Data does not exist',
         6026 => 'Internal error of the Alpha ESS cloud',
         6029 => 'Operation failed',
@@ -120,7 +124,9 @@ final class AlphaCloudApi
         if ($code === 200) {
             return ['ok' => true, 'code' => 200, 'error' => '', 'data' => $json['data'] ?? null];
         }
-        return ['ok' => false, 'code' => $code, 'error' => self::ERRORS[$code] ?? (string) ($json['msg'] ?? ('Error ' . $code)), 'data' => null];
+        // Der Meldungstext heißt je nach Endpunkt msg oder info.
+        $text = $json['msg'] ?? $json['info'] ?? null;
+        return ['ok' => false, 'code' => $code, 'error' => self::ERRORS[$code] ?? (is_string($text) && $text !== '' ? $text : 'Error ' . $code), 'data' => null];
     }
 
     public static function isAuthError(int $code): bool

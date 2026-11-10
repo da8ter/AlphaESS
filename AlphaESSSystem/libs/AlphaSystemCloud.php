@@ -182,8 +182,10 @@ trait AlphaSystemCloud
                 }
                 break;
             case 'evstatus':
-                if (is_array($data) && isset($data['evchargerStatus'])) {
-                    $this->publish(AlphaDataFlow::KIND_WALLBOX, $serial, 'cloud', ['status' => (int) $data['evchargerStatus']]);
+                // Das Handbuch nennt data eine Liste; ein einzelnes Objekt wird ebenso angenommen.
+                $row = is_array($data) && array_is_list($data) ? ($data[0] ?? null) : $data;
+                if (is_array($row) && is_numeric($row['evchargerStatus'] ?? null)) {
+                    $this->publish(AlphaDataFlow::KIND_WALLBOX, $serial, 'cloud', ['status' => (int) $row['evchargerStatus']]);
                 }
                 break;
             case 'evcurrent':
