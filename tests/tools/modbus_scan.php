@@ -90,7 +90,8 @@ foreach (AlphaRegisters::BLOCKS as $name => $block) {
     printf("%-9s %4d–%4d  NICHT lesbar (%s, %d ms)\n", $name, $block['address'], $end, $data === 0 ? 'keine Antwort' : 'Fehlercode ' . $data, $ms);
     if ($data !== 0) {
         foreach ($ranges($block['address'], $end) as [$a, $b]) {
-            echo "          lesbar: $a–$b\n";
+            // Klammern nötig: ohne sie liest PHP den Gedankenstrich als Teil des Variablennamens.
+            echo "          lesbar: {$a}–{$b}\n";
         }
     }
 }

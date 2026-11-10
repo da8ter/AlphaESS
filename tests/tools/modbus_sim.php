@@ -5,11 +5,12 @@ declare(strict_types=1);
 /*
  * Modbus-TCP-Simulator einer Alpha-ESS-Anlage für Messungen gegen ein Test-Symcon.
  *
- *   php tests/tools/modbus_sim.php [Port=5020] [Modus=normal|silent|exception]
+ *   php tests/tools/modbus_sim.php [Port=5020] [Modus=normal|silent|exception] [fehlende Register, z. B. 1040-1045,1060]
  *
  * normal:    beantwortet FC 3 aus der Registerkarte, Lücken mit Exception 2
  * silent:    nimmt Anfragen an und antwortet nie (Timeout-Messung)
  * exception: beantwortet jede Anfrage mit Exception 2
+ * Das dritte Argument nimmt Register aus der Karte heraus (prüft die Bereichssuche von modbus_scan.php).
  * Jede Anfrage wird protokolliert (Geräte-ID, Funktion, Adresse, Anzahl).
  */
 
@@ -18,6 +19,12 @@ $mode = (string) ($argv[2] ?? 'normal');
 
 /** @var array<int,int> $reg Adresse => 16-Bit-Wert */
 $reg = require __DIR__ . '/../fixtures/registers.php';
+foreach (array_filter(explode(',', (string) ($argv[3] ?? ''))) as $gap) {
+    [$from, $to] = array_map('intval', explode('-', $gap, 2)) + [1 => (int) $gap];
+    for ($address = $from; $address <= $to; $address++) {
+        unset($reg[$address]);
+    }
+}
 
 $server = stream_socket_server("tcp://0.0.0.0:$port", $errno, $errstr);
 if ($server === false) {
