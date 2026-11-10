@@ -24,6 +24,16 @@ trait AlphaDevice
         return is_array($data) && isset($data['ok']) ? $data : ['ok' => false, 'error' => $this->Translate('The Alpha ESS system did not answer')];
     }
 
+    /**
+     * Meldet eine gescheiterte Aktion. Gemessen 10.11.2026 (Symcon 9.1): Eine Ausgabe in RequestAction
+     * lässt die Aktion scheitern und erscheint als Meldung; eine Ausnahme brächte den Stacktrace mit.
+     * @param array<string,mixed> $answer
+     */
+    private function alphaFail(array $answer, string $fallback): void
+    {
+        echo (string) ($answer['error'] ?? $this->Translate($fallback));
+    }
+
     /** Nur Pakete für diese Geräteart (und Seriennummer) kommen an. */
     private function alphaFilter(string $kind, string $serial = ''): void
     {

@@ -87,7 +87,8 @@ class AlphaESSWallbox extends IPSModuleStrict
             default    => throw new \InvalidArgumentException('Unknown ident ' . $Ident),
         };
         if (empty($answer['ok'])) {
-            throw new \RuntimeException((string) ($answer['error'] ?? $this->Translate('The command could not be sent')));
+            $this->alphaFail($answer, 'The command could not be sent');
+            return;
         }
         $this->SetValue($Ident, $shown);
     }

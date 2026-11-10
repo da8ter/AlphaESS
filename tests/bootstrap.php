@@ -88,6 +88,18 @@ function alphaDevice(string $moduleId, int $system, array $props = []): int
     return $id;
 }
 
+/**
+ * Schaltet eine Variable wie Symcon (gemessen 10.11.2026): gibt die Aktion Text aus, ist sie gescheitert.
+ * @return array{ok:bool,message:string}
+ */
+function alphaAction(int $instance, string $ident, mixed $value): array
+{
+    ob_start();
+    $ok = RequestAction(World::varId($instance, $ident), $value);
+    $message = (string) ob_get_clean();
+    return ['ok' => $ok && $message === '', 'message' => $message];
+}
+
 /** Cloud-Attrappe mit passenden Zugangsdaten am System einrichten. */
 function alphaCloud(int $system): FakeAlphaCloud
 {

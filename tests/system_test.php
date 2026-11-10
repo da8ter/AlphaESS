@@ -214,7 +214,11 @@ check(World::value($sys, 'CloudState') === 3, 'kein Netz: „nicht erreichbar“
 section('Befehle ohne Cloud-Zugang');
 [$sys, $gw] = alphaWorld();
 $box = alphaDevice(ALPHA_WALLBOX, $sys, ['Serial' => 'EV0000000001']);
-check(RequestAction(World::varId($box, 'Charging'), true) === false && World::value($box, 'Charging') === false
-    && World::warningsLike('/Cloud-Zugang ist in der Alpha-ESS-Anlage nicht eingerichtet/') !== [], 'Befehl scheitert mit verständlicher Meldung, Variable bleibt');
+$try = alphaAction($box, 'Charging', true);
+check(!$try['ok'] && $try['message'] === 'Der Cloud-Zugang ist in der Alpha-ESS-Anlage nicht eingerichtet' && World::value($box, 'Charging') === false,
+    'Befehl scheitert mit verständlicher Meldung, Variable bleibt');
+IPS_DisconnectInstance($box);
+$try = alphaAction($box, 'Current', 10);
+check(!$try['ok'] && $try['message'] === 'Keine Alpha-ESS-Anlage verbunden' && World::value($box, 'Current') === 0, 'ohne Anlage: eigene Meldung');
 
 done();

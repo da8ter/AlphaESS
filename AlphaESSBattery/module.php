@@ -120,7 +120,8 @@ class AlphaESSBattery extends IPSModuleStrict
             };
             $answer = $this->alphaSend('BatteryConfig', ['Values' => [$key => $setting]]);
             if (empty($answer['ok'])) {
-                throw new \RuntimeException((string) ($answer['error'] ?? $this->Translate('The setting could not be changed')));
+                $this->alphaFail($answer, 'The setting could not be changed');
+                return;
             }
             $this->SetValue($Ident, $kind === 'clock' ? AlphaTimeGrid::toTimestamp((string) $setting) : $setting);
             return;
