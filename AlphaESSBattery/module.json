@@ -1,0 +1,16 @@
+{
+    "id": "{DEA587B6-0305-4D97-8884-52B36C03BF11}",
+    "name": "Alpha ESS Battery",
+    "type": 3,
+    "vendor": "Alpha ESS",
+    "aliases": [],
+    "parentRequirements": [
+        "{D47CC3DD-E236-42BE-A84E-5C7D88033D0A}"
+    ],
+    "childRequirements": [],
+    "implemented": [
+        "{F0D93D9B-AD5D-4D1D-A5FA-BDDEFA7E1860}"
+    ],
+    "prefix": "AESSB",
+    "url": ""
+}

@@ -1,0 +1,72 @@
+{
+    "elements": [
+        {
+            "type": "ExpansionPanel",
+            "caption": "Inverter and battery (Modbus TCP)",
+            "expanded": true,
+            "items": [
+                {
+                    "type": "Label",
+                    "caption": "The inverter and the battery are read locally via the parent ModBus Gateway (Modbus TCP, port 502, device ID 85). Modbus must be enabled on the system."
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "PollInterval",
+                    "caption": "Polling interval",
+                    "suffix": " s",
+                    "minimum": 2,
+                    "maximum": 3600
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Wallbox and charging windows (Alpha ESS cloud)",
+            "items": [
+                {
+                    "type": "Label",
+                    "caption": "The wallbox and the charging and discharging windows use the Alpha ESS Open API. Register at open.alphaess.com and bind the system with its serial number and check code."
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name": "AppID",
+                    "caption": "AppID"
+                },
+                {
+                    "type": "PasswordTextBox",
+                    "name": "AppSecret",
+                    "caption": "AppSecret"
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name": "SystemSN",
+                    "caption": "Serial number of the system"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "CloudInterval",
+                    "caption": "Query wallbox every",
+                    "suffix": " s",
+                    "minimum": 20,
+                    "maximum": 3600
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "CloudConfigInterval",
+                    "caption": "Query settings every",
+                    "suffix": " s",
+                    "minimum": 60,
+                    "maximum": 86400
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Read now",
+            "onClick": "IPS_RequestAction($id, 'Poll', 0);"
+        }
+    ],
+    "status": []
+}

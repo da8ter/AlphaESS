@@ -1,0 +1,16 @@
+{
+    "id": "{8D5045B3-2AC0-4AFD-B2DF-F85131243B9A}",
+    "name": "Alpha ESS Configurator",
+    "type": 4,
+    "vendor": "Alpha ESS",
+    "aliases": [],
+    "parentRequirements": [
+        "{D47CC3DD-E236-42BE-A84E-5C7D88033D0A}"
+    ],
+    "childRequirements": [],
+    "implemented": [
+        "{F0D93D9B-AD5D-4D1D-A5FA-BDDEFA7E1860}"
+    ],
+    "prefix": "AESSC",
+    "url": ""
+}

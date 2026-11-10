@@ -1,0 +1,12 @@
+{
+    "id": "{2229EFC1-62AD-4C34-A3F1-2152130BA5FA}",
+    "name": "Alpha ESS",
+    "author": "Stephan Sprick",
+    "url": "",
+    "compatibility": {
+        "version": "8.2"
+    },
+    "version": "0.1.0",
+    "build": 1,
+    "date": 1794268800
+}

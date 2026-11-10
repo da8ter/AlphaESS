@@ -1,0 +1,44 @@
+{
+    "translations": {
+        "de": {
+            "Alpha ESS Wallbox": "Alpha ESS Wallbox",
+            "Status": "Status",
+            "Unknown": "Unbekannt",
+            "Available": "Frei",
+            "Vehicle connected": "Fahrzeug verbunden",
+            "Charging": "Laden",
+            "Paused by wallbox": "Pausiert durch Wallbox",
+            "Paused by vehicle": "Pausiert durch Fahrzeug",
+            "Finishing": "Wird beendet",
+            "Fault": "Störung",
+            "Charging power": "Ladeleistung",
+            "Charging current": "Ladestrom",
+            "The command could not be sent": "Der Befehl konnte nicht gesendet werden",
+            "Serial number of the wallbox": "Seriennummer der Wallbox",
+            "The wallbox is controlled via the cloud access of the Alpha ESS system. The charging current only takes effect before a charging session starts.": "Die Wallbox wird über den Cloud-Zugang der Alpha-ESS-Anlage gesteuert. Der Ladestrom wirkt nur vor Beginn eines Ladevorgangs.",
+            "Serial number of the wallbox is missing": "Seriennummer der Wallbox fehlt",
+            "No Alpha ESS system connected": "Keine Alpha-ESS-Anlage verbunden",
+            "The Alpha ESS system did not answer": "Die Alpha-ESS-Anlage hat nicht geantwortet"
+        },
+        "en": {
+            "Alpha ESS Wallbox": "Alpha ESS Wallbox",
+            "Status": "Status",
+            "Unknown": "Unknown",
+            "Available": "Available",
+            "Vehicle connected": "Vehicle connected",
+            "Charging": "Charging",
+            "Paused by wallbox": "Paused by wallbox",
+            "Paused by vehicle": "Paused by vehicle",
+            "Finishing": "Finishing",
+            "Fault": "Fault",
+            "Charging power": "Charging power",
+            "Charging current": "Charging current",
+            "The command could not be sent": "The command could not be sent",
+            "Serial number of the wallbox": "Serial number of the wallbox",
+            "The wallbox is controlled via the cloud access of the Alpha ESS system. The charging current only takes effect before a charging session starts.": "The wallbox is controlled via the cloud access of the Alpha ESS system. The charging current only takes effect before a charging session starts.",
+            "Serial number of the wallbox is missing": "Serial number of the wallbox is missing",
+            "No Alpha ESS system connected": "No Alpha ESS system connected",
+            "The Alpha ESS system did not answer": "The Alpha ESS system did not answer"
+        }
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "id": "{A7663357-3AD8-42FC-A19F-AF89BED95173}",
+    "name": "Alpha ESS Wallbox",
+    "type": 3,
+    "vendor": "Alpha ESS",
+    "aliases": [],
+    "parentRequirements": [
+        "{D47CC3DD-E236-42BE-A84E-5C7D88033D0A}"
+    ],
+    "childRequirements": [],
+    "implemented": [
+        "{F0D93D9B-AD5D-4D1D-A5FA-BDDEFA7E1860}"
+    ],
+    "prefix": "AESSW",
+    "url": ""
+}

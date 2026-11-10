@@ -1,0 +1,46 @@
+{
+    "translations": {
+        "de": {
+            "Alpha ESS Inverter": "Alpha ESS Wechselrichter",
+            "PV power": "PV-Leistung",
+            "PV string %d": "PV-String %d",
+            "PV power (AC-coupled)": "PV-Leistung (AC-gekoppelt)",
+            "Grid power": "Netzleistung",
+            "Grid power L1": "Netzleistung L1",
+            "Grid power L2": "Netzleistung L2",
+            "Grid power L3": "Netzleistung L3",
+            "Consumption": "Verbrauch",
+            "Inverter power": "Wechselrichterleistung",
+            "Grid feed-in": "Netzeinspeisung",
+            "Grid consumption": "Netzbezug",
+            "PV energy": "PV-Ertrag",
+            "Grid frequency": "Netzfrequenz",
+            "Operating mode": "Betriebsmodus",
+            "Number of PV strings": "Anzahl PV-Strings",
+            "Show AC-coupled PV (PV meter)": "AC-gekoppelte PV anzeigen (PV-Zähler)",
+            "No Alpha ESS system connected": "Keine Alpha-ESS-Anlage verbunden",
+            "The Alpha ESS system did not answer": "Die Alpha-ESS-Anlage hat nicht geantwortet"
+        },
+        "en": {
+            "Alpha ESS Inverter": "Alpha ESS Inverter",
+            "PV power": "PV power",
+            "PV string %d": "PV string %d",
+            "PV power (AC-coupled)": "PV power (AC-coupled)",
+            "Grid power": "Grid power",
+            "Grid power L1": "Grid power L1",
+            "Grid power L2": "Grid power L2",
+            "Grid power L3": "Grid power L3",
+            "Consumption": "Consumption",
+            "Inverter power": "Inverter power",
+            "Grid feed-in": "Grid feed-in",
+            "Grid consumption": "Grid consumption",
+            "PV energy": "PV energy",
+            "Grid frequency": "Grid frequency",
+            "Operating mode": "Operating mode",
+            "Number of PV strings": "Number of PV strings",
+            "Show AC-coupled PV (PV meter)": "Show AC-coupled PV (PV meter)",
+            "No Alpha ESS system connected": "No Alpha ESS system connected",
+            "The Alpha ESS system did not answer": "The Alpha ESS system did not answer"
+        }
+    }
+}

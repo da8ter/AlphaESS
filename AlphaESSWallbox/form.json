@@ -1,0 +1,21 @@
+{
+    "elements": [
+        {
+            "type": "ValidationTextBox",
+            "name": "Serial",
+            "caption": "Serial number of the wallbox"
+        },
+        {
+            "type": "Label",
+            "caption": "The wallbox is controlled via the cloud access of the Alpha ESS system. The charging current only takes effect before a charging session starts."
+        }
+    ],
+    "actions": [],
+    "status": [
+        {
+            "code": 104,
+            "icon": "inactive",
+            "caption": "Serial number of the wallbox is missing"
+        }
+    ]
+}

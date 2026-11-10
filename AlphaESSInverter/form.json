@@ -1,0 +1,18 @@
+{
+    "elements": [
+        {
+            "type": "NumberSpinner",
+            "name": "PVStrings",
+            "caption": "Number of PV strings",
+            "minimum": 0,
+            "maximum": 6
+        },
+        {
+            "type": "CheckBox",
+            "name": "PVMeter",
+            "caption": "Show AC-coupled PV (PV meter)"
+        }
+    ],
+    "actions": [],
+    "status": []
+}

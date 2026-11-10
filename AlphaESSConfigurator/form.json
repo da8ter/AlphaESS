@@ -1,0 +1,35 @@
+{
+    "elements": [
+        {
+            "type": "Label",
+            "caption": "Please connect this configurator to an Alpha ESS system.",
+            "visible": false
+        },
+        {
+            "type": "Label",
+            "caption": "Wallboxes are listed once the cloud access is set up in the Alpha ESS system.",
+            "visible": false
+        }
+    ],
+    "actions": [
+        {
+            "type": "Configurator",
+            "name": "Devices",
+            "caption": "Devices",
+            "columns": [
+                {
+                    "caption": "Device",
+                    "name": "name",
+                    "width": "auto"
+                },
+                {
+                    "caption": "Serial number",
+                    "name": "serial",
+                    "width": "250px"
+                }
+            ],
+            "values": []
+        }
+    ],
+    "status": []
+}

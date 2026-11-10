@@ -1,0 +1,30 @@
+{
+    "translations": {
+        "de": {
+            "Alpha ESS Configurator": "Alpha ESS Konfigurator",
+            "Inverter": "Wechselrichter",
+            "Battery": "Speicher",
+            "Wallbox": "Wallbox",
+            "Devices": "Geräte",
+            "Device": "Gerät",
+            "Serial number": "Seriennummer",
+            "Please connect this configurator to an Alpha ESS system.": "Bitte diesen Konfigurator mit einer Alpha-ESS-Anlage verbinden.",
+            "Wallboxes are listed once the cloud access is set up in the Alpha ESS system.": "Wallboxen erscheinen, sobald der Cloud-Zugang in der Alpha-ESS-Anlage eingerichtet ist.",
+            "No Alpha ESS system connected": "Keine Alpha-ESS-Anlage verbunden",
+            "The Alpha ESS system did not answer": "Die Alpha-ESS-Anlage hat nicht geantwortet"
+        },
+        "en": {
+            "Alpha ESS Configurator": "Alpha ESS Configurator",
+            "Inverter": "Inverter",
+            "Battery": "Battery",
+            "Wallbox": "Wallbox",
+            "Devices": "Devices",
+            "Device": "Device",
+            "Serial number": "Serial number",
+            "Please connect this configurator to an Alpha ESS system.": "Please connect this configurator to an Alpha ESS system.",
+            "Wallboxes are listed once the cloud access is set up in the Alpha ESS system.": "Wallboxes are listed once the cloud access is set up in the Alpha ESS system.",
+            "No Alpha ESS system connected": "No Alpha ESS system connected",
+            "The Alpha ESS system did not answer": "The Alpha ESS system did not answer"
+        }
+    }
+}

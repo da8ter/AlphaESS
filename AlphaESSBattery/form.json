@@ -1,0 +1,15 @@
+{
+    "elements": [
+        {
+            "type": "CheckBox",
+            "name": "CloudControl",
+            "caption": "Control charging and discharging windows via the cloud"
+        },
+        {
+            "type": "Label",
+            "caption": "Requires the cloud access in the Alpha ESS system. Changes are sent to the cloud after about 20 seconds."
+        }
+    ],
+    "actions": [],
+    "status": []
+}

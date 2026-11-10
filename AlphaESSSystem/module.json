@@ -1,0 +1,19 @@
+{
+    "id": "{9421C388-104F-42B7-8ED6-3C3853FE6FB2}",
+    "name": "Alpha ESS System",
+    "type": 2,
+    "vendor": "Alpha ESS",
+    "aliases": [],
+    "parentRequirements": [
+        "{E310B701-4AE7-458E-B618-EC13A1A6F6A8}"
+    ],
+    "childRequirements": [
+        "{F0D93D9B-AD5D-4D1D-A5FA-BDDEFA7E1860}"
+    ],
+    "implemented": [
+        "{77B31ABB-18FA-4B91-BB63-E5B2AB5588F4}",
+        "{D47CC3DD-E236-42BE-A84E-5C7D88033D0A}"
+    ],
+    "prefix": "AESS",
+    "url": ""
+}
