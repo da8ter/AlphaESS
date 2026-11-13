@@ -19,6 +19,8 @@ require_once __DIR__ . '/libs/AlphaSystemForward.php';
  * Eine Alpha-ESS-Anlage: liest Wechselrichter und Speicher lokal über das Symcon ModBus Gateway,
  * spricht für Wallbox und Lade-/Entladefenster mit der Alpha-ESS-Cloud und verteilt die Werte
  * an die Geräteinstanzen. Beide Wege arbeiten unabhängig voneinander.
+ * „Nur Cloud“: kein Modbus; Leistungen und Ladestand kommen dann aus getLastPowerData. Zählerstände,
+ * Netzfrequenz, Wechselrichterleistung und Betriebsart liefert dieser Aufruf nicht.
  */
 class AlphaESSSystem extends IPSModuleStrict
 {
@@ -33,6 +35,7 @@ class AlphaESSSystem extends IPSModuleStrict
     {
         parent::Create();
 
+        $this->RegisterPropertyBoolean('CloudOnly', false);
         $this->RegisterPropertyInteger('PollInterval', 10);
         $this->RegisterPropertyString('AppID', '');
         $this->RegisterPropertyString('AppSecret', '');
@@ -49,6 +52,7 @@ class AlphaESSSystem extends IPSModuleStrict
             [0, $this->Translate('Not connected'), AlphaPresentations::GREY],
             [1, $this->Translate('Connected'), AlphaPresentations::GREEN],
             [2, $this->Translate('No answer'), AlphaPresentations::RED],
+            [3, $this->Translate('Not used (cloud only)'), AlphaPresentations::GREY],
         ]), 10);
         $this->RegisterVariableInteger('CloudState', $this->Translate('Cloud connection'), AlphaPresentations::state('cloud', [
             [0, $this->Translate('Not set up'), AlphaPresentations::GREY],
@@ -74,7 +78,13 @@ class AlphaESSSystem extends IPSModuleStrict
         $this->SetBuffer('Cfg_charge', '');
         $this->SetBuffer('Cfg_discharge', '');
 
-        $this->SetTimerInterval('Poll', max(2, $this->ReadPropertyInteger('PollInterval')) * 1000);
+        $cloudOnly = $this->ReadPropertyBoolean('CloudOnly');
+        $this->SetTimerInterval('Poll', $cloudOnly ? 0 : max(2, $this->ReadPropertyInteger('PollInterval')) * 1000);
+        if ($cloudOnly) {
+            $this->setState('ModbusState', 3);
+        } elseif ($this->GetValue('ModbusState') === 3) {
+            $this->setState('ModbusState', 0);
+        }
         $this->SetTimerInterval('CloudTick', $this->cloudConfigured() ? self::CLOUD_TICK_MS : 0);
         if (!$this->cloudConfigured()) {
             $this->setState('CloudState', 0);

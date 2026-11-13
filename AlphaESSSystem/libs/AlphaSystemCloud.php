@@ -32,6 +32,9 @@ trait AlphaSystemCloud
         $fast = max(20, $this->ReadPropertyInteger('CloudInterval'));
         $slow = max(60, $this->ReadPropertyInteger('CloudConfigInterval'));
         $reads = ['evlist' => self::CLOUD_LIST_INTERVAL, 'charge' => $slow, 'discharge' => $slow];
+        if ($this->ReadPropertyBoolean('CloudOnly')) {
+            $reads['power'] = $fast; // ohne Modbus die einzige Quelle für Leistung und Ladestand
+        }
         $boxes = $this->wallboxes();
         if ($boxes !== []) {
             $reads['power'] = $fast;
@@ -201,6 +204,11 @@ trait AlphaSystemCloud
                 }
                 break;
             case 'power':
+                if ($this->ReadPropertyBoolean('CloudOnly')) {
+                    $parts = AlphaRegisters::split(AlphaCloudApi::powerValues($data));
+                    $this->publish(AlphaDataFlow::KIND_INVERTER, '', 'cloud', $parts['inverter']);
+                    $this->publish(AlphaDataFlow::KIND_BATTERY, '', 'cloud', $parts['battery']);
+                }
                 $boxes = $this->wallboxes();
                 foreach ($boxes as $i => $box) {
                     $power = is_array($data) ? ($data['pevDetail']['ev' . ($i + 1) . 'Power'] ?? (count($boxes) === 1 ? ($data['pev'] ?? null) : null)) : null;

@@ -101,10 +101,15 @@ final class AlphaRegisters
             $v['load_power'] = max(0, (int) $v['grid_power'] + (int) $v['inverter_power'] + (int) ($v['pv_meter_power'] ?? 0));
         }
         if (isset($v['battery_power'])) {
-            $p = (int) $v['battery_power'];
-            $v['battery_state'] = $p > self::IDLE_WATT ? 2 : ($p < -self::IDLE_WATT ? 1 : 0);
+            $v['battery_state'] = self::batteryState((float) $v['battery_power']);
         }
         return $v;
+    }
+
+    /** Ruhend 0, lädt 1, entlädt 2; positive Leistung heißt entladen (wie am Modbus und in der Cloud). */
+    public static function batteryState(float $power): int
+    {
+        return $power > self::IDLE_WATT ? 2 : ($power < -self::IDLE_WATT ? 1 : 0);
     }
 
     /**

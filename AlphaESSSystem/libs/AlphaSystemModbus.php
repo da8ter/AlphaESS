@@ -12,6 +12,9 @@ trait AlphaSystemModbus
 
     private function pollModbus(): void
     {
+        if ($this->ReadPropertyBoolean('CloudOnly')) {
+            return; // auch „Jetzt lesen“ fragt dann kein Gateway
+        }
         $lock = 'AESS_' . $this->InstanceID . '_Poll';
         if (!IPS_SemaphoreEnter($lock, 1)) {
             return; // der vorige Zyklus wartet noch auf das Gerät

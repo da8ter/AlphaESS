@@ -28,6 +28,10 @@ final class FakeAlphaCloud
     /** @var array<string,array{model:string,status:int,power:float}> */
     public array $wallboxes = [];
     public int $amps = 16;
+    /** Leistungsfelder von getLastPowerData (Vorzeichen wie am Modbus: pbat > 0 entlädt, pgrid > 0 bezieht) */
+    public array $power = ['soc' => 65.5, 'pbat' => -1500, 'ppv' => 3500, 'pgrid' => -500, 'pload' => 1500,
+        'ppvDetail' => ['ppv1' => 1800, 'ppv2' => 1700, 'ppv3' => 0, 'ppv4' => 0, 'pmeterDc' => 0],
+        'pgridDetail' => ['pmeterL1' => -400, 'pmeterL2' => -100, 'pmeterL3' => 0]];
     /** Wird während eines Aufrufs ausgeführt (z. B. um einen Befehl mitten im Aufruf zu geben) */
     public ?Closure $onCall = null;
 
@@ -122,7 +126,7 @@ final class FakeAlphaCloud
                 foreach (array_values($this->wallboxes) as $i => $box) {
                     $detail['ev' . ($i + 1) . 'Power'] = $box['power'];
                 }
-                return ['soc' => 65.5, 'pev' => array_sum($detail), 'pevDetail' => $detail];
+                return $this->power + ['pev' => array_sum($detail), 'pevDetail' => $detail];
             case 'GET getChargeConfigInfo':
                 return $this->read('charge', $this->charge, $now);
             case 'GET getDisChargeConfigInfo':

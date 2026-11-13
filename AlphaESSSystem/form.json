@@ -1,6 +1,15 @@
 {
     "elements": [
         {
+            "type": "CheckBox",
+            "name": "CloudOnly",
+            "caption": "Cloud only (without Modbus)"
+        },
+        {
+            "type": "Label",
+            "caption": "Cloud only reads power values and state of charge from the Alpha ESS cloud, for systems without Modbus TCP. Fill in the cloud access below. Meter readings, grid frequency, inverter power and operating mode are only available via Modbus."
+        },
+        {
             "type": "ExpansionPanel",
             "caption": "Inverter and battery (Modbus TCP)",
             "expanded": true,

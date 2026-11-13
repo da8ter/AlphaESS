@@ -211,6 +211,39 @@ $cloud->offline = true;
 Kernel::advance(300); // nach dem Fehlversuch ist erst mit dem nächsten Intervall wieder ein Aufruf fällig
 check(World::value($sys, 'CloudState') === 3, 'kein Netz: „nicht erreichbar“');
 
+section('Nur Cloud: Leistungen ohne Modbus');
+[$sys, $gw] = alphaWorld();
+$cloud = alphaCloud($sys);
+$inv = alphaDevice(ALPHA_INVERTER, $sys);
+$bat = alphaDevice(ALPHA_BATTERY, $sys);
+IPS_SetProperty($sys, 'CloudOnly', true);
+IPS_ApplyChanges($sys);
+check(World::timer($sys, 'Poll')['interval'] === 0 && World::value($sys, 'ModbusState') === 3, 'kein Modbus-Takt, Zustand „nicht genutzt“');
+Kernel::advance(120);
+check($gw->requests === [], 'das Gateway wird nicht gefragt');
+check(in_array('getLastPowerData', $cloud->endpoints(), true), 'Leistungsdaten werden auch ohne Wallbox gelesen');
+check(World::value($inv, 'PVPower') === 3500.0 && World::value($inv, 'PV1Power') === 1800.0 && World::value($inv, 'PV2Power') === 1700.0, 'PV gesamt und je String aus der Cloud');
+check(World::value($inv, 'GridPower') === -500.0 && World::value($inv, 'GridPowerL1') === -400.0 && World::value($inv, 'LoadPower') === 1500.0, 'Netz und Verbrauch aus der Cloud');
+check(World::value($bat, 'SOC') === 65.5 && World::value($bat, 'Power') === -1500.0 && World::value($bat, 'State') === 1, 'Speicher: Ladestand, Leistung, lädt');
+check(!in_array('SOC', World::idents($inv), true) && !in_array('PVPower', World::idents($bat), true), 'auch hier bekommt jedes Gerät nur seine Werte');
+$cloud->power['pbat'] = 2200;
+Kernel::advance(120);
+check(World::value($bat, 'State') === 2 && World::value($bat, 'Power') === 2200.0, 'positive Batterieleistung: entlädt');
+$cloud->power = ['soc' => 50];
+Kernel::advance(120);
+check(World::value($bat, 'SOC') === 50.0 && World::value($inv, 'PVPower') === 3500.0 && Kernel::$warnings === [], 'fehlende Felder: der letzte Wert bleibt, keine Warnung');
+IPS_RequestAction($sys, 'Poll', 0);
+check($gw->requests === [], '„Jetzt lesen“ fragt im Cloud-Modus kein Gateway');
+IPS_SetProperty($sys, 'CloudOnly', false);
+IPS_ApplyChanges($sys);
+check(World::timer($sys, 'Poll')['interval'] === 10000 && World::value($sys, 'ModbusState') === 0, 'zurück auf Modbus: Takt läuft wieder');
+
+section('Nur Cloud ohne Wallbox: Leistungsdaten nur im Cloud-Modus');
+[$sys, $gw] = alphaWorld();
+$cloud = alphaCloud($sys);
+Kernel::advance(120);
+check(!in_array('getLastPowerData', $cloud->endpoints(), true), 'mit Modbus und ohne Wallbox kein überflüssiger Leistungsabruf');
+
 section('Befehle ohne Cloud-Zugang');
 [$sys, $gw] = alphaWorld();
 $box = alphaDevice(ALPHA_WALLBOX, $sys, ['Serial' => 'EV0000000001']);

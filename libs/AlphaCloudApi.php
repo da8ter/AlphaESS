@@ -8,6 +8,8 @@ declare(strict_types=1);
  * (github.com/alphaess-developer/alphacloud_open_api), abgeglichen mit dem Handbuch im
  * Entwicklerportal (Stand 10.11.2026).
  */
+require_once __DIR__ . '/AlphaRegisters.php';
+
 final class AlphaCloudApi
 {
     public const BASE_URL = 'https://openapi.alphaess.com/api';
@@ -108,6 +110,38 @@ final class AlphaCloudApi
             default       => ['sysSn' => $sysSn] + self::toCloud(substr($name, 4), $args),
         };
         return ['method' => 'POST', 'url' => self::BASE_URL . '/' . self::WRITES[$name], 'body' => (string) json_encode($body)];
+    }
+
+    /**
+     * Leistungen aus getLastPowerData, benannt wie die Modbus-Werte, damit Wechselrichter und Speicher
+     * sie unverändert anzeigen. Felder laut Demo des Herstellers (pbat, pgrid, pload, ppv, soc) und
+     * den Details je String und Phase. Vorzeichen wie am Modbus: pbat > 0 entlädt, pgrid > 0 bezieht
+     * aus dem Netz. Fehlt ein Feld, fehlt der Wert: die Anzeige bleibt dann beim letzten Stand.
+     * @return array<string,float|int>
+     */
+    public static function powerValues(mixed $data): array
+    {
+        if (!is_array($data)) {
+            return [];
+        }
+        $fields = ['battery_soc' => $data['soc'] ?? null, 'battery_power' => $data['pbat'] ?? null, 'pv_power' => $data['ppv'] ?? null,
+            'grid_power' => $data['pgrid'] ?? null, 'load_power' => $data['pload'] ?? null];
+        for ($i = 1; $i <= 4; $i++) {
+            $fields["pv{$i}_power"] = is_array($data['ppvDetail'] ?? null) ? ($data['ppvDetail']["ppv$i"] ?? null) : null;
+        }
+        for ($i = 1; $i <= 3; $i++) {
+            $fields["grid_power_l$i"] = is_array($data['pgridDetail'] ?? null) ? ($data['pgridDetail']["pmeterL$i"] ?? null) : null;
+        }
+        $values = [];
+        foreach ($fields as $name => $value) {
+            if (is_numeric($value)) {
+                $values[$name] = (float) $value;
+            }
+        }
+        if (isset($values['battery_power'])) {
+            $values['battery_state'] = AlphaRegisters::batteryState($values['battery_power']);
+        }
+        return $values;
     }
 
     /** @return array{ok:bool,code:int,error:string,data:mixed} */

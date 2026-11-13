@@ -119,4 +119,11 @@ check($shown['p'] === 1 && !isset($s2['pending']['set_x']), 'bestätigter Stand 
 [$shown, $s2] = AlphaCloudQueue::overlay($s, 'set_x', ['p' => 0, 'q' => 2, 'r' => 9], 1521);
 check($shown['p'] === 0 && !isset($s2['pending']['set_x']), 'nach 120 s ohne Bestätigung gilt der gelesene Stand');
 
+section('Cloud-Leistungen');
+check(AlphaCloudApi::powerValues(['soc' => 80, 'pbat' => -900, 'ppv' => '2100', 'pgrid' => 300, 'pload' => 1500, 'ppvDetail' => ['ppv1' => 2100], 'pgridDetail' => ['pmeterL2' => 300]])
+    === ['battery_soc' => 80.0, 'battery_power' => -900.0, 'pv_power' => 2100.0, 'grid_power' => 300.0, 'load_power' => 1500.0, 'pv1_power' => 2100.0, 'grid_power_l2' => 300.0, 'battery_state' => 1],
+    'Felder der Cloud in den Namen der Modbus-Werte, Zahlen auch als Text');
+check(AlphaCloudApi::powerValues(null) === [] && AlphaCloudApi::powerValues(['soc' => 'n/a', 'ppvDetail' => 'x']) === [], 'Unsinn ergibt keine Werte');
+check(AlphaRegisters::batteryState(31) === 2 && AlphaRegisters::batteryState(-31) === 1 && AlphaRegisters::batteryState(30) === 0, 'Speicherzustand ab 30 W');
+
 done();
