@@ -95,8 +95,11 @@ for ($i = 1; $i < count($cloud->calls); $i++) {
     $gaps[] = $cloud->calls[$i]['at'] - $cloud->calls[$i - 1]['at'];
 }
 check(min($gaps) >= 10, 'zwischen zwei Aufrufen liegen mindestens 10 s (kleinster Abstand ' . min($gaps) . ' s)');
-check(array_values(array_unique($cloud->endpoints())) === ['getEvChargerConfigList', 'getChargeConfigInfo', 'getDisChargeConfigInfo', 'getLastPowerData', 'getEvChargerCurrentsBySn', 'getEvChargerStatusBySn'],
-    'alle Leseaufträge sind gelaufen: ' . implode(',', array_unique($cloud->endpoints())));
+Kernel::advance(40); // drei Aufträge mehr als früher (Summen, Tageswerte, Stammdaten)
+$seen = array_values(array_unique($cloud->endpoints()));
+$want = ['getEvChargerConfigList', 'getChargeConfigInfo', 'getDisChargeConfigInfo', 'getSumDataForCustomer', 'getOneDateEnergyBySn', 'getEssList',
+    'getLastPowerData', 'getEvChargerCurrentsBySn', 'getEvChargerStatusBySn'];
+check(count($seen) === count($want) && array_diff($want, $seen) === [], 'alle Leseaufträge sind gelaufen: ' . implode(',', $seen));
 check(World::value($box, 'Status') === 2 && World::value($box, 'Charging') === false && World::value($box, 'Current') === 16 && World::value($box, 'Power') === 0.0, 'Wallbox: Fahrzeug verbunden, 16 A');
 check(World::value($bat, 'GridCharge') === false && World::value($bat, 'ChargeLimit') === 100 && World::value($bat, 'DischargeLimit') === 10
     && World::value($bat, 'ChargeStart1') === AlphaTimeGrid::toTimestamp('00:00'), 'Speicher: Konfiguration aus der Cloud');
@@ -237,6 +240,46 @@ check($gw->requests === [], '„Jetzt lesen“ fragt im Cloud-Modus kein Gateway
 IPS_SetProperty($sys, 'CloudOnly', false);
 IPS_ApplyChanges($sys);
 check(World::timer($sys, 'Poll')['interval'] === 10000 && World::value($sys, 'ModbusState') === 0, 'zurück auf Modbus: Takt läuft wieder');
+
+section('Nur Cloud: alles, was die Cloud liefert');
+[$sys, $gw] = alphaWorld();
+$cloud = alphaCloud($sys);
+$cloud->wallboxes = ['EV0000000001' => ['model' => 'SMILE-EVCT11', 'status' => 2, 'power' => 0.0]];
+$inv = alphaDevice(ALPHA_INVERTER, $sys);
+$bat = alphaDevice(ALPHA_BATTERY, $sys);
+$box = alphaDevice(ALPHA_WALLBOX, $sys, ['Serial' => 'EV0000000001']);
+IPS_SetProperty($sys, 'CloudOnly', true);
+IPS_ApplyChanges($sys);
+Kernel::advance(200);
+check(World::value($inv, 'PVEnergy') === 5.5 && World::value($inv, 'GridConsumptionEnergy') === 30.71 && World::value($inv, 'GridFeedInEnergy') === 0.01,
+    'Zählerstände des Wechselrichters aus den Summen');
+check(World::value($bat, 'ChargeEnergy') === 0.1 && World::value($bat, 'DischargeEnergy') === 0.1, 'Zählerstände des Speichers aus den Summen');
+check(World::value($inv, 'InverterPower') === 2000.0 && World::value($inv, 'InverterPowerL1') === 700.0, 'Wechselrichterleistung gesamt und je Phase');
+check(World::value($inv, 'PVEnergyToday') === 1.3 && World::value($inv, 'GridConsumptionToday') === 30.71 && World::value($inv, 'SelfSufficiency') === 10.14
+    && World::value($inv, 'LoadEnergy') === 32.0, 'Tageswerte, Verbrauch gesamt und Autarkie');
+check(World::value($bat, 'ChargeToday') === 0.1 && World::value($bat, 'Capacity') === 7.68 && World::value($bat, 'UsableShare') === 95.0, 'Speicher: heute, Kapazität, nutzbarer Anteil');
+check(World::value($sys, 'EmsStatus') === 'Normal' && World::value($sys, 'InverterModel') === 'SMILE-G3-T6-INV' && World::value($sys, 'PVPeak') === 8.0
+    && World::value($sys, 'IncomeTotal') === 1.32 && World::value($sys, 'CO2') === 2.75, 'Anlage: EMS-Status, Modell, Spitzenleistung, Ertrag, CO2');
+check(!in_array('IncomeToday', World::idents($sys), true), 'ohne Wert entsteht keine Variable (Ertrag heute ist leer)');
+check(World::value($box, 'EnergyToday') === 2.5, 'Wallbox: Energie heute, bei genau einer Wallbox');
+check($cloud->lastDate === date('Y-m-d', AlphaClock::now()), 'Tageswerte für das heutige Datum');
+check(Kernel::$warnings === [], 'keine Warnungen');
+
+section('Modbus mit Cloud: Zusatzwerte ja, Zähler nicht doppelt');
+[$sys, $gw] = alphaWorld();
+$cloud = alphaCloud($sys);
+$inv = alphaDevice(ALPHA_INVERTER, $sys);
+Kernel::advance(200);
+check(World::value($inv, 'PVEnergy') === 9876.5 && World::value($inv, 'SelfSufficiency') === 10.14 && World::value($inv, 'PVEnergyToday') === 1.3,
+    'PV-Ertrag bleibt beim Modbus-Zähler, Autarkie und Tageswerte kommen dazu');
+
+section('Ohne Cloud: keine leeren Zusatzvariablen');
+[$sys, $gw] = alphaWorld();
+$inv = alphaDevice(ALPHA_INVERTER, $sys);
+$bat = alphaDevice(ALPHA_BATTERY, $sys);
+Kernel::advance(30);
+check(array_intersect(World::idents($inv), ['PVEnergyToday', 'SelfSufficiency', 'InverterPowerL1']) === [] && !in_array('Capacity', World::idents($bat), true)
+    && !in_array('EmsStatus', World::idents($sys), true), 'nur Modbus: keine Cloud-Variablen');
 
 section('Nur Cloud ohne Wallbox: Leistungsdaten nur im Cloud-Modus');
 [$sys, $gw] = alphaWorld();

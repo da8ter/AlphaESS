@@ -58,6 +58,28 @@ trait AlphaDevice
         return !empty($answer['ok']) && is_array($answer['values'] ?? null) ? $answer['values'] : [];
     }
 
+    /**
+     * Werte, die nur die Cloud liefert: die Variable entsteht mit dem ersten Wert, damit eine Anlage
+     * ohne Cloud-Zugang keine leeren Variablen trägt.
+     * @param array<string,array{0:string,1:string,2:string,3:string,4:int,5:int}> $table Wert => [Ident, Name, Icon, Suffix, Stellen, Position]
+     * @param array<string,mixed> $values
+     * @param list<string> $counters
+     */
+    private function alphaCloudValues(array $table, array $values, array $counters = []): void
+    {
+        foreach ($table as $key => [$ident, $name, $icon, $suffix, $digits, $position]) {
+            if (!is_numeric($values[$key] ?? null)) {
+                continue;
+            }
+            $this->MaintainVariable($ident, $this->Translate($name), VARIABLETYPE_FLOAT, AlphaPresentations::value($icon, $suffix, $digits), $position, true);
+            if (in_array($key, $counters, true)) {
+                $this->alphaCounter($ident, (float) $values[$key]);
+            } else {
+                $this->SetValue($ident, (float) $values[$key]);
+            }
+        }
+    }
+
     /** Zählerstände laufen nur vorwärts; 0 und Rücksprünge sind Lesefehler und würden das Archiv verfälschen. */
     private function alphaCounter(string $ident, float $value): void
     {

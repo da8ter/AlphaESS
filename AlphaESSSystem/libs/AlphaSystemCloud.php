@@ -31,7 +31,8 @@ trait AlphaSystemCloud
     {
         $fast = max(20, $this->ReadPropertyInteger('CloudInterval'));
         $slow = max(60, $this->ReadPropertyInteger('CloudConfigInterval'));
-        $reads = ['evlist' => self::CLOUD_LIST_INTERVAL, 'charge' => $slow, 'discharge' => $slow];
+        // Summen, Tageswerte und Stammdaten ändern sich langsam: im Takt der Konfiguration
+        $reads = ['evlist' => self::CLOUD_LIST_INTERVAL, 'charge' => $slow, 'discharge' => $slow, 'sum' => $slow, 'today' => $slow, 'ess' => $slow];
         if ($this->ReadPropertyBoolean('CloudOnly')) {
             $reads['power'] = $fast; // ohne Modbus die einzige Quelle für Leistung und Ladestand
         }
@@ -110,6 +111,9 @@ trait AlphaSystemCloud
         [$name, $serial] = explode(':', $job, 2) + [1 => ''];
         $isWrite = str_starts_with($name, 'set_');
         $args = $picked['args'];
+        if ($name === 'today') {
+            $args = ['date' => date('Y-m-d', $now)];
+        }
         if ($name === 'set_charge' || $name === 'set_discharge') {
             $base = json_decode($this->GetBuffer('Cfg_' . substr($name, 4)), true);
             $args = array_merge(is_array($base) ? $base : [], $args);
@@ -216,6 +220,27 @@ trait AlphaSystemCloud
                         $this->publish(AlphaDataFlow::KIND_WALLBOX, $box['sn'], 'cloud', ['power' => (float) $power]);
                     }
                 }
+                break;
+            case 'sum':
+                $sum = AlphaCloudApi::sumValues($data, $this->ReadPropertyBoolean('CloudOnly'));
+                $this->publish(AlphaDataFlow::KIND_INVERTER, '', 'cloud', $sum['inverter']);
+                $this->publish(AlphaDataFlow::KIND_BATTERY, '', 'cloud', $sum['battery']);
+                $this->systemInfo($sum['system']);
+                break;
+            case 'today':
+                $today = AlphaCloudApi::todayValues($data);
+                $this->publish(AlphaDataFlow::KIND_INVERTER, '', 'cloud', $today['inverter']);
+                $this->publish(AlphaDataFlow::KIND_BATTERY, '', 'cloud', $today['battery']);
+                // Die Cloud zählt alle Wallboxen zusammen: zuordnen lässt es sich nur bei einer
+                $boxes = $this->wallboxes();
+                if (count($boxes) === 1) {
+                    $this->publish(AlphaDataFlow::KIND_WALLBOX, $boxes[0]['sn'], 'cloud', $today['wallbox']);
+                }
+                break;
+            case 'ess':
+                $ess = AlphaCloudApi::essValues($data, trim($this->ReadPropertyString('SystemSN')));
+                $this->publish(AlphaDataFlow::KIND_BATTERY, '', 'cloud', $ess['battery']);
+                $this->systemInfo($ess['system']);
                 break;
             case 'charge':
             case 'discharge':

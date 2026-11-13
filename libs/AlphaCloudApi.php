@@ -64,6 +64,9 @@ final class AlphaCloudApi
         'evcurrent' => 'getEvChargerCurrentsBySn',
         'charge'    => 'getChargeConfigInfo',
         'discharge' => 'getDisChargeConfigInfo',
+        'sum'       => 'getSumDataForCustomer',
+        'today'     => 'getOneDateEnergyBySn',
+        'ess'       => 'getEssList',
     ];
 
     private const WRITES = [
@@ -98,8 +101,13 @@ final class AlphaCloudApi
     {
         [$name, $serial] = explode(':', $job, 2) + [1 => ''];
         if (isset(self::READS[$name])) {
-            $query = ['sysSn' => $sysSn] + ($name === 'evstatus' ? ['evchargerSn' => $serial] : []);
-            return ['method' => 'GET', 'url' => self::BASE_URL . '/' . self::READS[$name] . '?' . http_build_query($query), 'body' => null];
+            $query = match ($name) {
+                'ess'      => [],
+                'evstatus' => ['sysSn' => $sysSn, 'evchargerSn' => $serial],
+                'today'    => ['sysSn' => $sysSn, 'queryDate' => (string) ($args['date'] ?? '')],
+                default    => ['sysSn' => $sysSn],
+            };
+            return ['method' => 'GET', 'url' => self::BASE_URL . '/' . self::READS[$name] . ($query === [] ? '' : '?' . http_build_query($query)), 'body' => null];
         }
         if (!isset(self::WRITES[$name])) {
             return null;
@@ -131,6 +139,8 @@ final class AlphaCloudApi
         }
         for ($i = 1; $i <= 3; $i++) {
             $fields["grid_power_l$i"] = is_array($data['pgridDetail'] ?? null) ? ($data['pgridDetail']["pmeterL$i"] ?? null) : null;
+            // Wirkleistung des Wechselrichters je Phase; die Summe ist die Wechselrichterleistung
+            $fields["inverter_power_l$i"] = $data["prealL$i"] ?? null;
         }
         $values = [];
         foreach ($fields as $name => $value) {
@@ -141,7 +151,100 @@ final class AlphaCloudApi
         if (isset($values['battery_power'])) {
             $values['battery_state'] = AlphaRegisters::batteryState($values['battery_power']);
         }
+        $phases = array_intersect_key($values, array_flip(['inverter_power_l1', 'inverter_power_l2', 'inverter_power_l3']));
+        if ($phases !== []) {
+            $values['inverter_power'] = array_sum($phases);
+        }
         return $values;
+    }
+
+    /**
+     * Summen aus getSumDataForCustomer. Die Zählerstände gibt es zweimal, über Modbus und hier;
+     * sie kommen nur mit $counters (Modus „Nur Cloud“), sonst stritten zwei Quellen um eine Variable.
+     * @return array{inverter:array<string,float>,battery:array<string,float>,system:array<string,float|string>}
+     */
+    public static function sumValues(mixed $data, bool $counters): array
+    {
+        $out = ['inverter' => [], 'battery' => [], 'system' => []];
+        if (!is_array($data)) {
+            return $out;
+        }
+        $take = static function (string $kind, string $name, mixed $value, float $factor = 1.0) use (&$out): void {
+            if (is_numeric($value)) {
+                $out[$kind][$name] = round((float) $value * $factor, 4);
+            }
+        };
+        $take('inverter', 'load_energy', $data['eload'] ?? null);
+        $take('inverter', 'self_consumption', $data['eselfConsumption'] ?? null, 100.0);
+        $take('inverter', 'self_sufficiency', $data['eselfSufficiency'] ?? null, 100.0);
+        $take('system', 'income_total', $data['totalIncome'] ?? null);
+        $take('system', 'income_today', $data['todayIncome'] ?? null);
+        $take('system', 'trees', $data['treeNum'] ?? null);
+        $take('system', 'co2', $data['carbonNum'] ?? null);
+        if (is_string($data['moneyType'] ?? null) && trim($data['moneyType']) !== '') {
+            $out['system']['currency'] = mb_substr(trim($data['moneyType']), 0, 8);
+        }
+        if ($counters) {
+            $take('inverter', 'pv_energy', $data['epvtotal'] ?? null);
+            $take('inverter', 'grid_feed_in_energy', $data['eoutput'] ?? null);
+            $take('inverter', 'grid_consumption_energy', $data['einput'] ?? null);
+            $take('battery', 'battery_charge_energy', $data['echarge'] ?? null);
+            $take('battery', 'battery_discharge_energy', $data['edischarge'] ?? null);
+        }
+        return $out;
+    }
+
+    /**
+     * Tageswerte aus getOneDateEnergyBySn.
+     * @return array{inverter:array<string,float>,battery:array<string,float>,wallbox:array<string,float>}
+     */
+    public static function todayValues(mixed $data): array
+    {
+        $out = ['inverter' => [], 'battery' => [], 'wallbox' => []];
+        $map = ['inverter' => ['pv_energy_today' => 'epv', 'grid_feed_in_today' => 'eOutput', 'grid_consumption_today' => 'eInput'],
+            'battery' => ['battery_charge_today' => 'eCharge', 'battery_discharge_today' => 'eDischarge', 'battery_grid_charge_today' => 'eGridCharge'],
+            'wallbox' => ['energy_today' => 'eChargingPile']];
+        foreach ($map as $kind => $fields) {
+            foreach ($fields as $name => $field) {
+                if (is_array($data) && is_numeric($data[$field] ?? null)) {
+                    $out[$kind][$name] = (float) $data[$field];
+                }
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Stammdaten der Anlage aus getEssList (die Liste aller Anlagen des Zugangs).
+     * @return array{battery:array<string,float>,system:array<string,float|string>}
+     */
+    public static function essValues(mixed $data, string $sysSn): array
+    {
+        $out = ['battery' => [], 'system' => []];
+        $rows = is_array($data) ? (array_is_list($data) ? $data : [$data]) : [];
+        $row = null;
+        foreach ($rows as $candidate) {
+            if (is_array($candidate) && (string) ($candidate['sysSn'] ?? '') === $sysSn) {
+                $row = $candidate;
+            }
+        }
+        if ($row === null) {
+            return $out;
+        }
+        foreach (['ems_status' => 'emsStatus', 'inverter_model' => 'minv', 'battery_model' => 'mbat'] as $name => $field) {
+            if (is_string($row[$field] ?? null) && trim($row[$field]) !== '') {
+                $out['system'][$name] = mb_substr(trim($row[$field]), 0, 60);
+            }
+        }
+        foreach (['system' => ['pv_peak' => 'popv', 'inverter_rated' => 'poinv'],
+            'battery' => ['battery_capacity' => 'cobat', 'battery_usable_capacity' => 'surplusCobat', 'battery_usable_share' => 'usCapacity']] as $kind => $fields) {
+            foreach ($fields as $name => $field) {
+                if (is_numeric($row[$field] ?? null)) {
+                    $out[$kind][$name] = (float) $row[$field];
+                }
+            }
+        }
+        return $out;
     }
 
     /** @return array{ok:bool,code:int,error:string,data:mixed} */

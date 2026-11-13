@@ -29,6 +29,22 @@ class AlphaESSSystem extends IPSModuleStrict
     use AlphaSystemForward;
 
     private const MODBUS_DEVICE_ID = 85;
+
+    /**
+     * Angaben zur Anlage aus der Cloud; die Variablen entstehen erst mit dem ersten Wert.
+     * @var array<string,array{0:string,1:string,2:int,3:string,4:string,5:int,6:int}> Wert => [Ident, Name, Typ, Icon, Suffix, Stellen, Position]
+     */
+    private const CLOUD_INFO = [
+        'ems_status'     => ['EmsStatus', 'EMS status', VARIABLETYPE_STRING, 'circle-info', '', 0, 30],
+        'inverter_model' => ['InverterModel', 'Inverter model', VARIABLETYPE_STRING, 'tag', '', 0, 40],
+        'battery_model'  => ['BatteryModel', 'Battery model', VARIABLETYPE_STRING, 'tag', '', 0, 41],
+        'pv_peak'        => ['PVPeak', 'PV peak power', VARIABLETYPE_FLOAT, 'solar-panel', ' kWp', 1, 42],
+        'inverter_rated' => ['InverterRated', 'Inverter rated power', VARIABLETYPE_FLOAT, 'bolt', ' kW', 1, 43],
+        'income_total'   => ['IncomeTotal', 'Income total', VARIABLETYPE_FLOAT, 'coins', '', 2, 50],
+        'income_today'   => ['IncomeToday', 'Income today', VARIABLETYPE_FLOAT, 'coins', '', 2, 51],
+        'trees'          => ['Trees', 'Trees planted (equivalent)', VARIABLETYPE_FLOAT, 'tree', '', 2, 52],
+        'co2'            => ['CO2', 'CO2 saved', VARIABLETYPE_FLOAT, 'leaf', ' kg', 2, 53],
+    ];
     private const CLOUD_TICK_MS = 5000;
 
     public function Create(): void
@@ -148,6 +164,28 @@ class AlphaESSSystem extends IPSModuleStrict
         $cache = json_decode($this->GetBuffer($name), true);
         $this->SetBuffer($name, (string) json_encode(array_merge(is_array($cache) ? $cache : [], $values)));
         $this->SendDataToChildren(AlphaDataFlow::toChildren($kind, $serial, $values));
+    }
+
+    /**
+     * Angaben zur Anlage selbst (Cloud). Die Variable entsteht mit dem ersten Wert; Erträge tragen die
+     * Währung der Cloud, sobald sie eine nennt.
+     * @param array<string,float|string> $values
+     */
+    private function systemInfo(array $values): void
+    {
+        $currency = isset($values['currency']) ? ' ' . $values['currency'] : '';
+        foreach (self::CLOUD_INFO as $key => [$ident, $name, $type, $icon, $suffix, $digits, $position]) {
+            if (!isset($values[$key])) {
+                continue;
+            }
+            $presentation = $type === VARIABLETYPE_STRING ? AlphaPresentations::text($icon)
+                : AlphaPresentations::value($icon, str_starts_with($key, 'income_') ? $currency : $suffix, $digits);
+            $this->MaintainVariable($ident, $this->Translate($name), $type, $presentation, $position, true);
+            $value = $type === VARIABLETYPE_STRING ? (string) $values[$key] : (float) $values[$key];
+            if ($this->GetValue($ident) !== $value) {
+                $this->SetValue($ident, $value);
+            }
+        }
     }
 
     private function cacheName(string $kind, string $serial, string $source): string

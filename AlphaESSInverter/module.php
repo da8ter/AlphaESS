@@ -6,7 +6,7 @@ require_once __DIR__ . '/../libs/AlphaDataFlow.php';
 require_once __DIR__ . '/../libs/AlphaPresentations.php';
 require_once __DIR__ . '/../libs/AlphaDevice.php';
 
-// Wechselrichter einer Alpha-ESS-Anlage: Erzeugung, Netz, Verbrauch. Werte kommen vom System (Modbus).
+// Wechselrichter einer Alpha-ESS-Anlage: Erzeugung, Netz, Verbrauch. Werte kommen vom System (Modbus oder Cloud).
 class AlphaESSInverter extends IPSModuleStrict
 {
     use AlphaDevice;
@@ -29,6 +29,19 @@ class AlphaESSInverter extends IPSModuleStrict
     ];
 
     private const COUNTERS = ['grid_feed_in_energy', 'grid_consumption_energy', 'pv_energy'];
+
+    /** @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int}> nur aus der Cloud, entstehen mit dem ersten Wert */
+    private const CLOUD_VARIABLES = [
+        'inverter_power_l1'      => ['InverterPowerL1', 'Inverter power L1', 'bolt', ' W', 0, 51],
+        'inverter_power_l2'      => ['InverterPowerL2', 'Inverter power L2', 'bolt', ' W', 0, 52],
+        'inverter_power_l3'      => ['InverterPowerL3', 'Inverter power L3', 'bolt', ' W', 0, 53],
+        'pv_energy_today'        => ['PVEnergyToday', 'PV energy today', 'solar-panel', ' kWh', 2, 63],
+        'grid_feed_in_today'     => ['GridFeedInToday', 'Grid feed-in today', 'arrow-up', ' kWh', 2, 64],
+        'grid_consumption_today' => ['GridConsumptionToday', 'Grid consumption today', 'arrow-down', ' kWh', 2, 65],
+        'load_energy'            => ['LoadEnergy', 'Consumption total', 'house', ' kWh', 1, 66],
+        'self_consumption'       => ['SelfConsumption', 'Self-consumption', 'recycle', ' %', 1, 90],
+        'self_sufficiency'       => ['SelfSufficiency', 'Self-sufficiency', 'house-circle-check', ' %', 1, 91],
+    ];
 
     public function Create(): void
     {
@@ -112,5 +125,6 @@ class AlphaESSInverter extends IPSModuleStrict
         if (is_numeric($values['inverter_mode'] ?? null)) {
             $this->SetValue('Mode', (int) $values['inverter_mode']);
         }
+        $this->alphaCloudValues(self::CLOUD_VARIABLES, $values, ['load_energy']);
     }
 }

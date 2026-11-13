@@ -28,6 +28,12 @@ final class AlphaPresentations
      * @param list<array{0:int,1:string,2:int}> $rows [Wert, Beschriftung, Farbe]
      * @return array<string,mixed>
      */
+    /** Text ohne Einheit und Stellen: die Wertdarstellung nur mit Symbol */
+    public static function text(string $icon): array
+    {
+        return ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => $icon];
+    }
+
     public static function state(string $icon, array $rows): array
     {
         $intervals = [];

@@ -48,13 +48,16 @@ final class AlphaCloudQueue
             return (string) $write;
         }
         $best = null;
-        $bestDue = PHP_INT_MAX;
+        $bestRank = [PHP_INT_MAX, PHP_INT_MAX];
         foreach ($reads as $job => $interval) {
             // Ein nie gelaufener Auftrag ist sofort fällig, unabhängig von seinem Intervall.
-            $due = $state['force'][$job] ?? (isset($state['last'][$job]) ? (int) $state['last'][$job] + $interval : 0);
-            if ($due <= $now && $due < $bestDue) {
+            $forced = isset($state['force'][$job]);
+            $due = $forced ? (int) $state['force'][$job] : (isset($state['last'][$job]) ? (int) $state['last'][$job] + $interval : 0);
+            // Das Zurücklesen nach einer Änderung geht vor: es bestätigt, was der Benutzer gerade getan hat.
+            $rank = [$forced ? 0 : 1, $due];
+            if ($due <= $now && $rank < $bestRank) {
                 $best = $job;
-                $bestDue = $due;
+                $bestRank = $rank;
             }
         }
         return $best;

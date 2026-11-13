@@ -19,7 +19,16 @@
             "Number of PV strings": "Anzahl PV-Strings",
             "Show AC-coupled PV (PV meter)": "AC-gekoppelte PV anzeigen (PV-Zähler)",
             "No Alpha ESS system connected": "Keine Alpha-ESS-Anlage verbunden",
-            "The Alpha ESS system did not answer": "Die Alpha-ESS-Anlage hat nicht geantwortet"
+            "The Alpha ESS system did not answer": "Die Alpha-ESS-Anlage hat nicht geantwortet",
+            "Inverter power L1": "Wechselrichterleistung L1",
+            "Inverter power L2": "Wechselrichterleistung L2",
+            "Inverter power L3": "Wechselrichterleistung L3",
+            "PV energy today": "PV-Ertrag heute",
+            "Grid feed-in today": "Netzeinspeisung heute",
+            "Grid consumption today": "Netzbezug heute",
+            "Consumption total": "Verbrauch gesamt",
+            "Self-consumption": "Eigenverbrauch",
+            "Self-sufficiency": "Autarkie"
         },
         "en": {
             "Alpha ESS Inverter": "Alpha ESS Inverter",
@@ -40,7 +49,16 @@
             "Number of PV strings": "Number of PV strings",
             "Show AC-coupled PV (PV meter)": "Show AC-coupled PV (PV meter)",
             "No Alpha ESS system connected": "No Alpha ESS system connected",
-            "The Alpha ESS system did not answer": "The Alpha ESS system did not answer"
+            "The Alpha ESS system did not answer": "The Alpha ESS system did not answer",
+            "Inverter power L1": "Inverter power L1",
+            "Inverter power L2": "Inverter power L2",
+            "Inverter power L3": "Inverter power L3",
+            "PV energy today": "PV energy today",
+            "Grid feed-in today": "Grid feed-in today",
+            "Grid consumption today": "Grid consumption today",
+            "Consumption total": "Consumption total",
+            "Self-consumption": "Self-consumption",
+            "Self-sufficiency": "Self-sufficiency"
         }
     }
 }

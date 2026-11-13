@@ -28,7 +28,13 @@
             "Control charging and discharging windows via the cloud": "Lade- und Entladefenster über die Cloud steuern",
             "Requires the cloud access in the Alpha ESS system. Changes are sent to the cloud after about 20 seconds.": "Benötigt den Cloud-Zugang in der Alpha-ESS-Anlage. Änderungen gehen nach etwa 20 Sekunden an die Cloud.",
             "No Alpha ESS system connected": "Keine Alpha-ESS-Anlage verbunden",
-            "The Alpha ESS system did not answer": "Die Alpha-ESS-Anlage hat nicht geantwortet"
+            "The Alpha ESS system did not answer": "Die Alpha-ESS-Anlage hat nicht geantwortet",
+            "Energy charged today": "Heute geladen",
+            "Energy discharged today": "Heute entladen",
+            "Charged from grid today": "Heute aus dem Netz geladen",
+            "Capacity": "Kapazität",
+            "Usable capacity": "Nutzbare Kapazität",
+            "Usable share": "Nutzbarer Anteil"
         },
         "en": {
             "Alpha ESS Battery": "Alpha ESS Battery",
@@ -58,7 +64,13 @@
             "Control charging and discharging windows via the cloud": "Control charging and discharging windows via the cloud",
             "Requires the cloud access in the Alpha ESS system. Changes are sent to the cloud after about 20 seconds.": "Requires the cloud access in the Alpha ESS system. Changes are sent to the cloud after about 20 seconds.",
             "No Alpha ESS system connected": "No Alpha ESS system connected",
-            "The Alpha ESS system did not answer": "The Alpha ESS system did not answer"
+            "The Alpha ESS system did not answer": "The Alpha ESS system did not answer",
+            "Energy charged today": "Energy charged today",
+            "Energy discharged today": "Energy discharged today",
+            "Charged from grid today": "Charged from grid today",
+            "Capacity": "Capacity",
+            "Usable capacity": "Usable capacity",
+            "Usable share": "Usable share"
         }
     }
 }

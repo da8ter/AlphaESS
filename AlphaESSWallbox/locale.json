@@ -18,7 +18,8 @@
             "The wallbox is controlled via the cloud access of the Alpha ESS system. The charging current only takes effect before a charging session starts.": "Die Wallbox wird über den Cloud-Zugang der Alpha-ESS-Anlage gesteuert. Der Ladestrom wirkt nur vor Beginn eines Ladevorgangs.",
             "Serial number of the wallbox is missing": "Seriennummer der Wallbox fehlt",
             "No Alpha ESS system connected": "Keine Alpha-ESS-Anlage verbunden",
-            "The Alpha ESS system did not answer": "Die Alpha-ESS-Anlage hat nicht geantwortet"
+            "The Alpha ESS system did not answer": "Die Alpha-ESS-Anlage hat nicht geantwortet",
+            "Energy today": "Energie heute"
         },
         "en": {
             "Alpha ESS Wallbox": "Alpha ESS Wallbox",
@@ -38,7 +39,8 @@
             "The wallbox is controlled via the cloud access of the Alpha ESS system. The charging current only takes effect before a charging session starts.": "The wallbox is controlled via the cloud access of the Alpha ESS system. The charging current only takes effect before a charging session starts.",
             "Serial number of the wallbox is missing": "Serial number of the wallbox is missing",
             "No Alpha ESS system connected": "No Alpha ESS system connected",
-            "The Alpha ESS system did not answer": "The Alpha ESS system did not answer"
+            "The Alpha ESS system did not answer": "The Alpha ESS system did not answer",
+            "Energy today": "Energy today"
         }
     }
 }

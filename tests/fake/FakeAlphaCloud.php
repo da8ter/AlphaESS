@@ -31,7 +31,18 @@ final class FakeAlphaCloud
     /** Leistungsfelder von getLastPowerData (Vorzeichen wie am Modbus: pbat > 0 entlädt, pgrid > 0 bezieht) */
     public array $power = ['soc' => 65.5, 'pbat' => -1500, 'ppv' => 3500, 'pgrid' => -500, 'pload' => 1500,
         'ppvDetail' => ['ppv1' => 1800, 'ppv2' => 1700, 'ppv3' => 0, 'ppv4' => 0, 'pmeterDc' => 0],
-        'pgridDetail' => ['pmeterL1' => -400, 'pmeterL2' => -100, 'pmeterL3' => 0]];
+        'pgridDetail' => ['pmeterL1' => -400, 'pmeterL2' => -100, 'pmeterL3' => 0], 'prealL1' => 700, 'prealL2' => 650, 'prealL3' => 650];
+    /** Summen (getSumDataForCustomer), Felder wie an einer echten Anlage gemessen (13.11.2026) */
+    public array $sum = ['epvtoday' => 1.3, 'epvtotal' => 5.5, 'eload' => 32, 'eoutput' => 0.01, 'einput' => 30.71, 'echarge' => 0.1,
+        'edischarge' => 0.1, 'todayIncome' => null, 'totalIncome' => 1.32, 'eselfConsumption' => 1, 'eselfSufficiency' => 0.1014,
+        'treeNum' => 0.55, 'carbonNum' => 2.75, 'moneyType' => null];
+    /** Tageswerte (getOneDateEnergyBySn) */
+    public array $today = ['eCharge' => 0.1, 'epv' => 1.3, 'eOutput' => 0.01, 'eInput' => 30.71, 'eGridCharge' => 0, 'eDischarge' => 0.1, 'eChargingPile' => 2.5];
+    /** Anlagen des Zugangs (getEssList) */
+    public array $ess = ['popv' => 8, 'minv' => 'SMILE-G3-T6-INV', 'poinv' => 6, 'cobat' => 7.68, 'mbat' => 'SMILE-G3-BAT-3.8S',
+        'surplusCobat' => 7.296, 'usCapacity' => 95, 'emsStatus' => 'Normal'];
+    /** queryDate der letzten Tagesabfrage */
+    public string $lastDate = '';
     /** Wird während eines Aufrufs ausgeführt (z. B. um einen Befehl mitten im Aufruf zu geben) */
     public ?Closure $onCall = null;
 
@@ -103,7 +114,7 @@ final class FakeAlphaCloud
         if ($h['appId'] !== $this->appId || !hash_equals(hash('sha512', $this->appId . $this->secret . $h['timeStamp']), $h['sign'])) {
             return 6007;
         }
-        return ($params['sysSn'] ?? '') === $this->sysSn ? 200 : 6005;
+        return !array_key_exists('sysSn', $params) || $params['sysSn'] === $this->sysSn ? 200 : 6005;
     }
 
     /** @param array<string,mixed> $p */
@@ -121,6 +132,13 @@ final class FakeAlphaCloud
                 return [['evchargerStatus' => $this->wallboxes[(string) $p['evchargerSn']]['status'] ?? 0]];
             case 'GET getEvChargerCurrentsBySn':
                 return $this->read('current', ['currentsetting' => $this->amps], $now);
+            case 'GET getSumDataForCustomer':
+                return $this->sum;
+            case 'GET getOneDateEnergyBySn':
+                $this->lastDate = (string) ($p['queryDate'] ?? '');
+                return ['sysSn' => $this->sysSn, 'theDate' => $this->lastDate] + $this->today;
+            case 'GET getEssList':
+                return [['sysSn' => 'AL0000000000999'] + $this->ess, ['sysSn' => $this->sysSn] + $this->ess];
             case 'GET getLastPowerData':
                 $detail = [];
                 foreach (array_values($this->wallboxes) as $i => $box) {

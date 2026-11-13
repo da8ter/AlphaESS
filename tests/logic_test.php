@@ -124,6 +124,28 @@ check(AlphaCloudApi::powerValues(['soc' => 80, 'pbat' => -900, 'ppv' => '2100', 
     === ['battery_soc' => 80.0, 'battery_power' => -900.0, 'pv_power' => 2100.0, 'grid_power' => 300.0, 'load_power' => 1500.0, 'pv1_power' => 2100.0, 'grid_power_l2' => 300.0, 'battery_state' => 1],
     'Felder der Cloud in den Namen der Modbus-Werte, Zahlen auch als Text');
 check(AlphaCloudApi::powerValues(null) === [] && AlphaCloudApi::powerValues(['soc' => 'n/a', 'ppvDetail' => 'x']) === [], 'Unsinn ergibt keine Werte');
+$sumData = ['epvtotal' => 5.5, 'eload' => 32, 'eoutput' => 0.01, 'einput' => 30.71, 'echarge' => 0.1, 'edischarge' => 0.2,
+    'eselfConsumption' => 1, 'eselfSufficiency' => 0.1014, 'totalIncome' => 1.32, 'todayIncome' => null, 'treeNum' => 0.55, 'carbonNum' => 2.75, 'moneyType' => 'EUR'];
+$withCounters = AlphaCloudApi::sumValues($sumData, true);
+$noCounters = AlphaCloudApi::sumValues($sumData, false);
+check($withCounters['inverter']['pv_energy'] === 5.5 && $withCounters['inverter']['grid_consumption_energy'] === 30.71 && $withCounters['battery']['battery_discharge_energy'] === 0.2,
+    'Summen: Zählerstände nur im Modus „Nur Cloud“');
+check(!isset($noCounters['inverter']['pv_energy']) && $noCounters['battery'] === [] && $noCounters['inverter']['self_sufficiency'] === 10.14 && $noCounters['inverter']['load_energy'] === 32.0,
+    'Summen mit Modbus: keine zweite Quelle für die Zähler, Autarkie in Prozent');
+check($noCounters['system'] === ['income_total' => 1.32, 'trees' => 0.55, 'co2' => 2.75, 'currency' => 'EUR'], 'Summen: Ertrag ohne leeren Tageswert, Währung');
+$today = AlphaCloudApi::todayValues(['epv' => 1.3, 'eOutput' => 0.01, 'eInput' => 30.71, 'eCharge' => 0.1, 'eDischarge' => 0, 'eGridCharge' => 0, 'eChargingPile' => 2.5]);
+check($today['inverter']['pv_energy_today'] === 1.3 && $today['battery']['battery_discharge_today'] === 0.0 && $today['wallbox'] === ['energy_today' => 2.5], 'Tageswerte, auch 0');
+$ess = AlphaCloudApi::essValues([['sysSn' => 'ANDERE', 'minv' => 'X'], ['sysSn' => 'AL1', 'minv' => 'SMILE-G3-T6-INV', 'popv' => 8, 'cobat' => 7.68, 'usCapacity' => 95, 'emsStatus' => 'Normal']], 'AL1');
+check($ess['system']['inverter_model'] === 'SMILE-G3-T6-INV' && $ess['system']['ems_status'] === 'Normal' && $ess['battery']['battery_capacity'] === 7.68 && $ess['battery']['battery_usable_share'] === 95.0,
+    'Stammdaten der eigenen Anlage, nicht der ersten in der Liste');
+check(AlphaCloudApi::essValues([['sysSn' => 'ANDERE']], 'AL1') === ['battery' => [], 'system' => []], 'fremde Anlage: nichts');
+$pw = AlphaCloudApi::powerValues(['prealL1' => 10, 'prealL2' => 39, 'prealL3' => 21]);
+check($pw['inverter_power'] === 70.0 && $pw['inverter_power_l2'] === 39.0, 'Wechselrichterleistung = Summe der Phasen');
+check(AlphaCloudApi::build('today', 'AL1', ['date' => '2026-11-13'])['url'] === AlphaCloudApi::BASE_URL . '/getOneDateEnergyBySn?sysSn=AL1&queryDate=2026-11-13'
+    && AlphaCloudApi::build('ess', 'AL1')['url'] === AlphaCloudApi::BASE_URL . '/getEssList', 'Tagesabfrage mit Datum, Anlagenliste ohne Seriennummer');
+$q = AlphaCloudQueue::fresh();
+$q['force']['charge'] = 100;
+check(AlphaCloudQueue::next($q, ['sum' => 300, 'charge' => 300], 200) === 'charge', 'Zurücklesen nach einer Änderung geht einem nie gelaufenen Abruf vor');
 check(AlphaRegisters::batteryState(31) === 2 && AlphaRegisters::batteryState(-31) === 1 && AlphaRegisters::batteryState(30) === 0, 'Speicherzustand ab 30 W');
 
 done();

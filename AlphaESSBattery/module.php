@@ -27,6 +27,16 @@ class AlphaESSBattery extends IPSModuleStrict
 
     private const COUNTERS = ['battery_charge_energy', 'battery_discharge_energy'];
 
+    /** @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int}> nur aus der Cloud, entstehen mit dem ersten Wert */
+    private const CLOUD_VARIABLES = [
+        'battery_charge_today'      => ['ChargeToday', 'Energy charged today', 'arrow-down', ' kWh', 2, 52],
+        'battery_discharge_today'   => ['DischargeToday', 'Energy discharged today', 'arrow-up', ' kWh', 2, 53],
+        'battery_grid_charge_today' => ['GridChargeToday', 'Charged from grid today', 'plug', ' kWh', 2, 54],
+        'battery_capacity'          => ['Capacity', 'Capacity', 'battery-full', ' kWh', 2, 60],
+        'battery_usable_capacity'   => ['UsableCapacity', 'Usable capacity', 'battery-three-quarters', ' kWh', 2, 61],
+        'battery_usable_share'      => ['UsableShare', 'Usable share', 'percent', ' %', 0, 62],
+    ];
+
     /** @var array<string,array{0:string,1:string,2:string,3:int}> Wert => [Ident, Name, Art, Position] */
     private const CONTROLS = [
         'grid_charge'       => ['GridCharge', 'Charge from grid', 'switch', 100],
@@ -145,6 +155,7 @@ class AlphaESSBattery extends IPSModuleStrict
         if (is_numeric($values['battery_state'] ?? null) && $this->GetValue('State') !== (int) $values['battery_state']) {
             $this->SetValue('State', (int) $values['battery_state']);
         }
+        $this->alphaCloudValues(self::CLOUD_VARIABLES, $values);
         if (!$this->ReadPropertyBoolean('CloudControl')) {
             return;
         }

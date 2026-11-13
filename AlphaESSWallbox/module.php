@@ -117,5 +117,7 @@ class AlphaESSWallbox extends IPSModuleStrict
         if (is_numeric($values['current'] ?? null) && $this->GetValue('Current') !== (int) $values['current']) {
             $this->SetValue('Current', (int) $values['current']);
         }
+        // Tagesenergie aus der Cloud; die Anlage schickt sie nur, wenn es genau eine Wallbox gibt
+        $this->alphaCloudValues(['energy_today' => ['EnergyToday', 'Energy today', 'charging-station', ' kWh', 2, 50]], $values);
     }
 }
