@@ -29,7 +29,8 @@ trait AlphaSystemCloud
     /** @return array<string,int> Leseauftrag => Intervall in Sekunden */
     private function cloudReads(): array
     {
-        $fast = max(20, $this->ReadPropertyInteger('CloudInterval'));
+        // Alpha nennt 10 s als kürzesten Abstand; zwei Aufrufe liegen ohnehin 10 s auseinander
+        $fast = max(15, $this->ReadPropertyInteger('CloudInterval'));
         $slow = max(60, $this->ReadPropertyInteger('CloudConfigInterval'));
         // Summen, Tageswerte und Stammdaten ändern sich langsam: im Takt der Konfiguration
         $reads = ['evlist' => self::CLOUD_LIST_INTERVAL, 'charge' => $slow, 'discharge' => $slow, 'sum' => $slow, 'today' => $slow, 'ess' => $slow];

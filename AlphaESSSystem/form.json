@@ -54,9 +54,9 @@
                 {
                     "type": "NumberSpinner",
                     "name": "CloudInterval",
-                    "caption": "Query wallbox every",
+                    "caption": "Query power values every",
                     "suffix": " s",
-                    "minimum": 20,
+                    "minimum": 15,
                     "maximum": 3600
                 },
                 {

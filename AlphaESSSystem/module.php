@@ -56,7 +56,7 @@ class AlphaESSSystem extends IPSModuleStrict
         $this->RegisterPropertyString('AppID', '');
         $this->RegisterPropertyString('AppSecret', '');
         $this->RegisterPropertyString('SystemSN', '');
-        $this->RegisterPropertyInteger('CloudInterval', 60);
+        $this->RegisterPropertyInteger('CloudInterval', 20);
         $this->RegisterPropertyInteger('CloudConfigInterval', 300);
 
         $this->RegisterAttributeString('Wallboxes', '[]');
