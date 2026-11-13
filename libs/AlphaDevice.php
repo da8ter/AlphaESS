@@ -80,6 +80,35 @@ trait AlphaDevice
         }
     }
 
+    /**
+     * Läuft die Anlage nur über die Cloud? Das System schickt die Angabe mit seinem Stand und nach jeder
+     * Änderung; die Instanz merkt sie sich, damit sie schon vor dem ersten Paket die richtigen Variablen trägt.
+     * @param array<string,mixed> $values
+     */
+    private function alphaCloudOnly(array $values = []): bool
+    {
+        if (is_bool($values['cloud_only'] ?? null) && $values['cloud_only'] !== $this->ReadAttributeBoolean('CloudOnly')) {
+            $this->WriteAttributeBoolean('CloudOnly', $values['cloud_only']);
+        }
+        return $this->ReadAttributeBoolean('CloudOnly');
+    }
+
+    /**
+     * Messwerte, die nur Modbus liefert: im Modus „Nur Cloud“ gibt es die Variablen nicht, sonst blieben
+     * sie mit einem alten Wert stehen.
+     * @param array<string,array{0:string,1:string,2:string,3:string,4:int,5:int}> $table Wert => [Ident, Name, Icon, Suffix, Stellen, Position]
+     * @param array<string,mixed> $values
+     */
+    private function alphaModbusValues(array $table, array $values, bool $keep): void
+    {
+        foreach ($table as $key => [$ident, $name, $icon, $suffix, $digits, $position]) {
+            $this->MaintainVariable($ident, $this->Translate($name), VARIABLETYPE_FLOAT, AlphaPresentations::value($icon, $suffix, $digits), $position, $keep);
+            if ($keep && is_numeric($values[$key] ?? null)) {
+                $this->SetValue($ident, (float) $values[$key]);
+            }
+        }
+    }
+
     /** Zählerstände laufen nur vorwärts; 0 und Rücksprünge sind Lesefehler und würden das Archiv verfälschen. */
     private function alphaCounter(string $ident, float $value): void
     {

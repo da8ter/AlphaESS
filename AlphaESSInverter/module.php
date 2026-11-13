@@ -25,7 +25,11 @@ class AlphaESSInverter extends IPSModuleStrict
         'grid_feed_in_energy'     => ['GridFeedInEnergy', 'Grid feed-in', 'arrow-up', ' kWh', 2, 60],
         'grid_consumption_energy' => ['GridConsumptionEnergy', 'Grid consumption', 'arrow-down', ' kWh', 2, 61],
         'pv_energy'               => ['PVEnergy', 'PV energy', 'solar-panel', ' kWh', 1, 62],
-        'grid_frequency'          => ['Frequency', 'Grid frequency', 'wave-square', ' Hz', 2, 70],
+    ];
+
+    /** @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int}> nur über Modbus, fehlen im Modus „Nur Cloud“ */
+    private const MODBUS_VARIABLES = [
+        'grid_frequency' => ['Frequency', 'Grid frequency', 'wave-square', ' Hz', 2, 70],
     ];
 
     private const COUNTERS = ['grid_feed_in_energy', 'grid_consumption_energy', 'pv_energy'];
@@ -49,11 +53,11 @@ class AlphaESSInverter extends IPSModuleStrict
 
         $this->RegisterPropertyInteger('PVStrings', 2);
         $this->RegisterPropertyBoolean('PVMeter', false);
+        $this->RegisterAttributeBoolean('CloudOnly', false);
 
         foreach (self::VARIABLES as [$ident, $name, $icon, $suffix, $digits, $position]) {
             $this->RegisterVariableFloat($ident, $this->Translate($name), AlphaPresentations::value($icon, $suffix, $digits), $position);
         }
-        $this->RegisterVariableInteger('Mode', $this->Translate('Operating mode'), AlphaPresentations::value('circle-info', ''), 80);
     }
 
     public function ApplyChanges(): void
@@ -67,6 +71,7 @@ class AlphaESSInverter extends IPSModuleStrict
         }
         $this->MaintainVariable('PVMeterPower', $this->Translate('PV power (AC-coupled)'), VARIABLETYPE_FLOAT,
             AlphaPresentations::value('solar-panel', ' W'), 20, $this->ReadPropertyBoolean('PVMeter'));
+        $this->modbusOnly([]);
 
         if (IPS_GetKernelRunlevel() !== KR_READY) {
             $this->RegisterMessage(0, IPS_KERNELSTARTED);
@@ -101,9 +106,24 @@ class AlphaESSInverter extends IPSModuleStrict
         return max(0, min(self::MAX_STRINGS, $this->ReadPropertyInteger('PVStrings')));
     }
 
+    /**
+     * Netzfrequenz und Betriebsart gibt es nur über Modbus.
+     * @param array<string,mixed> $values
+     */
+    private function modbusOnly(array $values): void
+    {
+        $keep = !$this->alphaCloudOnly($values);
+        $this->alphaModbusValues(self::MODBUS_VARIABLES, $values, $keep);
+        $this->MaintainVariable('Mode', $this->Translate('Operating mode'), VARIABLETYPE_INTEGER, AlphaPresentations::value('circle-info', ''), 80, $keep);
+        if ($keep && is_numeric($values['inverter_mode'] ?? null)) {
+            $this->SetValue('Mode', (int) $values['inverter_mode']);
+        }
+    }
+
     /** @param array<string,mixed> $values */
     private function applyValues(array $values): void
     {
+        $this->modbusOnly($values);
         foreach (self::VARIABLES as $key => [$ident]) {
             if (!isset($values[$key]) || !is_numeric($values[$key])) {
                 continue;
@@ -121,9 +141,6 @@ class AlphaESSInverter extends IPSModuleStrict
         }
         if ($this->ReadPropertyBoolean('PVMeter') && is_numeric($values['pv_meter_power'] ?? null)) {
             $this->SetValue('PVMeterPower', (float) $values['pv_meter_power']);
-        }
-        if (is_numeric($values['inverter_mode'] ?? null)) {
-            $this->SetValue('Mode', (int) $values['inverter_mode']);
         }
         $this->alphaCloudValues(self::CLOUD_VARIABLES, $values, ['load_energy']);
     }

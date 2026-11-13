@@ -222,6 +222,10 @@ $bat = alphaDevice(ALPHA_BATTERY, $sys);
 IPS_SetProperty($sys, 'CloudOnly', true);
 IPS_ApplyChanges($sys);
 check(World::timer($sys, 'Poll')['interval'] === 0 && World::value($sys, 'ModbusState') === 3, 'kein Modbus-Takt, Zustand „nicht genutzt“');
+check(array_intersect(['Voltage', 'Current'], World::idents($bat)) === [] && array_intersect(['Frequency', 'Mode'], World::idents($inv)) === [],
+    'Spannung, Strom, Netzfrequenz und Betriebsart verschwinden: die Cloud liefert sie nicht');
+$late = alphaDevice(ALPHA_BATTERY, $sys);
+check(!in_array('Voltage', World::idents($late), true) && in_array('SOC', World::idents($late), true), 'ein später angelegter Speicher erfährt den Modus beim Anschluss');
 Kernel::advance(120);
 check($gw->requests === [], 'das Gateway wird nicht gefragt');
 check(in_array('getLastPowerData', $cloud->endpoints(), true), 'Leistungsdaten werden auch ohne Wallbox gelesen');
@@ -240,6 +244,9 @@ check($gw->requests === [], '„Jetzt lesen“ fragt im Cloud-Modus kein Gateway
 IPS_SetProperty($sys, 'CloudOnly', false);
 IPS_ApplyChanges($sys);
 check(World::timer($sys, 'Poll')['interval'] === 10000 && World::value($sys, 'ModbusState') === 0, 'zurück auf Modbus: Takt läuft wieder');
+Kernel::advance(10);
+check(World::value($bat, 'Voltage') === 51.2 && World::value($inv, 'Frequency') === 50.01 && World::value($inv, 'Mode') === 2 && Kernel::$warnings === [],
+    'zurück auf Modbus: die Variablen sind wieder da und bekommen Werte');
 
 section('Nur Cloud: alles, was die Cloud liefert');
 [$sys, $gw] = alphaWorld();

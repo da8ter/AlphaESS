@@ -19,8 +19,8 @@ require_once __DIR__ . '/libs/AlphaSystemForward.php';
  * Eine Alpha-ESS-Anlage: liest Wechselrichter und Speicher lokal über das Symcon ModBus Gateway,
  * spricht für Wallbox und Lade-/Entladefenster mit der Alpha-ESS-Cloud und verteilt die Werte
  * an die Geräteinstanzen. Beide Wege arbeiten unabhängig voneinander.
- * „Nur Cloud“: kein Modbus; Leistungen und Ladestand kommen dann aus getLastPowerData. Zählerstände,
- * Netzfrequenz, Wechselrichterleistung und Betriebsart liefert dieser Aufruf nicht.
+ * „Nur Cloud“: kein Modbus; alle Werte kommen aus der Cloud. Netzfrequenz, Betriebsart, Spannung und Strom
+ * des Speichers liefert sie nicht, Wechselrichter und Speicher entfernen diese Variablen dann.
  */
 class AlphaESSSystem extends IPSModuleStrict
 {
@@ -100,6 +100,10 @@ class AlphaESSSystem extends IPSModuleStrict
             $this->setState('ModbusState', 3);
         } elseif ($this->GetValue('ModbusState') === 3) {
             $this->setState('ModbusState', 0);
+        }
+        // Wechselrichter und Speicher entfernen oder ergänzen ihre Modbus-Variablen
+        foreach ([AlphaDataFlow::KIND_INVERTER, AlphaDataFlow::KIND_BATTERY] as $kind) {
+            $this->SendDataToChildren(AlphaDataFlow::toChildren($kind, '', ['cloud_only' => $cloudOnly]));
         }
         $this->SetTimerInterval('CloudTick', $this->cloudConfigured() ? self::CLOUD_TICK_MS : 0);
         if (!$this->cloudConfigured()) {

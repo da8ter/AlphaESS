@@ -7,7 +7,7 @@
         },
         {
             "type": "Label",
-            "caption": "Cloud only reads power values and state of charge from the Alpha ESS cloud, for systems without Modbus TCP. Fill in the cloud access below. Meter readings, grid frequency, inverter power and operating mode are only available via Modbus."
+            "caption": "Cloud only reads all values from the Alpha ESS cloud, for systems without Modbus TCP. Fill in the cloud access below. Grid frequency, operating mode, battery voltage and battery current are only available via Modbus; these variables are removed in this mode."
         },
         {
             "type": "ExpansionPanel",

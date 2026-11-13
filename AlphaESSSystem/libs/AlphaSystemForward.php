@@ -29,7 +29,7 @@ trait AlphaSystemForward
         $now = AlphaClock::now();
         switch ((string) ($data['Action'] ?? '')) {
             case 'GetState':
-                return ['values' => $this->cached((string) ($data['Kind'] ?? ''), (string) ($data['Serial'] ?? ''))];
+                return ['values' => $this->cached((string) ($data['Kind'] ?? ''), (string) ($data['Serial'] ?? '')) + ['cloud_only' => $this->ReadPropertyBoolean('CloudOnly')]];
 
             case 'ListDevices':
                 return ['wallboxes' => $this->wallboxes(), 'cloud' => $this->cloudConfigured()];

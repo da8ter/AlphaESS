@@ -19,10 +19,14 @@ class AlphaESSBattery extends IPSModuleStrict
     private const VARIABLES = [
         'battery_soc'              => ['SOC', 'State of charge', 'battery-half', ' %', 1, 10],
         'battery_power'            => ['Power', 'Battery power', 'bolt', ' W', 0, 20],
-        'battery_voltage'          => ['Voltage', 'Voltage', 'bolt', ' V', 1, 40],
-        'battery_current'          => ['Current', 'Current', 'bolt', ' A', 1, 41],
         'battery_charge_energy'    => ['ChargeEnergy', 'Energy charged', 'arrow-down', ' kWh', 1, 50],
         'battery_discharge_energy' => ['DischargeEnergy', 'Energy discharged', 'arrow-up', ' kWh', 1, 51],
+    ];
+
+    /** @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int}> nur über Modbus, fehlen im Modus „Nur Cloud“ */
+    private const MODBUS_VARIABLES = [
+        'battery_voltage' => ['Voltage', 'Voltage', 'bolt', ' V', 1, 40],
+        'battery_current' => ['Current', 'Current', 'bolt', ' A', 1, 41],
     ];
 
     private const COUNTERS = ['battery_charge_energy', 'battery_discharge_energy'];
@@ -61,6 +65,7 @@ class AlphaESSBattery extends IPSModuleStrict
         parent::Create();
 
         $this->RegisterPropertyBoolean('CloudControl', false);
+        $this->RegisterAttributeBoolean('CloudOnly', false);
 
         foreach (self::VARIABLES as [$ident, $name, $icon, $suffix, $digits, $position]) {
             $this->RegisterVariableFloat($ident, $this->Translate($name), AlphaPresentations::value($icon, $suffix, $digits), $position);
@@ -76,6 +81,7 @@ class AlphaESSBattery extends IPSModuleStrict
     {
         parent::ApplyChanges();
 
+        $this->alphaModbusValues(self::MODBUS_VARIABLES, [], !$this->alphaCloudOnly());
         $control = $this->ReadPropertyBoolean('CloudControl');
         foreach (self::CONTROLS as [$ident, $name, $kind, $position]) {
             [$type, $presentation] = match ($kind) {
@@ -142,6 +148,7 @@ class AlphaESSBattery extends IPSModuleStrict
     /** @param array<string,mixed> $values */
     private function applyValues(array $values): void
     {
+        $this->alphaModbusValues(self::MODBUS_VARIABLES, $values, !$this->alphaCloudOnly($values));
         foreach (self::VARIABLES as $key => [$ident]) {
             if (!is_numeric($values[$key] ?? null)) {
                 continue;
