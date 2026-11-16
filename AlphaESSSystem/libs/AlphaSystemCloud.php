@@ -128,6 +128,10 @@ trait AlphaSystemCloud
         $http = AlphaHttpTransport::send($request['method'], $request['url'], $headers, $request['body'], self::CLOUD_TIMEOUT);
         $result = AlphaCloudApi::parse($http['status'], $http['body'], $http['error']);
         $this->SendDebug('Cloud', $name . ': ' . ($result['ok'] ? 'ok' : $result['code'] . ' ' . $result['error']), 0);
+        if ($result['ok'] && $result['data'] !== null) {
+            // Die Antwort selbst, damit sich fehlende oder unerwartete Felder an der Anlage nachsehen lassen
+            $this->SendDebug('Cloud ' . $name, (string) json_encode($result['data'], JSON_UNESCAPED_UNICODE), 0);
+        }
 
         $limited = $result['code'] === AlphaCloudApi::RATE_LIMITED;
         $readback = match ($name) {
