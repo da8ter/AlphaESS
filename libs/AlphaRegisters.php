@@ -131,15 +131,16 @@ final class AlphaRegisters
             'pv_capacity'            => [2049, 'u32', 1.0],
             'pv_capacity_ac_coupled' => [2051, 'u32', 1.0],
         ],
-        // Zeitsteuerung der Anlage; Zeiten in vollen Stunden laut Registerliste
+        // Zeitsteuerung der Anlage; Zeiten in vollen Stunden laut Registerliste. Die SOC-Werte sind ganze
+        // Prozent, nicht 0,1 % wie in der Liste (an einer Anlage gemessen 16.11.2026: Reserve 10 % = 10).
         'windows' => [
             'window_control'          => [2127, 'u16', 1.0],
-            'window_reserve_soc'      => [2128, 'u16', 0.1],
+            'window_reserve_soc'      => [2128, 'u16', 1.0],
             'window_discharge_start1' => [2129, 'u16', 1.0],
             'window_discharge_end1'   => [2130, 'u16', 1.0],
             'window_discharge_start2' => [2131, 'u16', 1.0],
             'window_discharge_end2'   => [2132, 'u16', 1.0],
-            'window_charge_limit'     => [2133, 'u16', 0.1],
+            'window_charge_limit'     => [2133, 'u16', 1.0],
             'window_charge_start1'    => [2134, 'u16', 1.0],
             'window_charge_end1'      => [2135, 'u16', 1.0],
             'window_charge_start2'    => [2136, 'u16', 1.0],

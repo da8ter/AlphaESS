@@ -83,8 +83,8 @@ return (static function (): array {
     $fill(2048, 2052);
     // Zeitsteuerung 0x084F–0x0859
     $u16(2127, 1);         // Laden zeitgesteuert
-    $u16(2128, 100);       // Reserve 10 %
-    $u16(2133, 900);       // Laden bis 90 %
+    $u16(2128, 10);        // Reserve 10 % (ganze Prozent, an einer Anlage gemessen)
+    $u16(2133, 90);        // Laden bis 90 %
     $u16(2134, 1);         // Laden 01–05 Uhr
     $u16(2135, 5);
     $fill(2127, 2137);
