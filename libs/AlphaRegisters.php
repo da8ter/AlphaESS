@@ -9,12 +9,20 @@ declare(strict_types=1);
  */
 final class AlphaRegisters
 {
-    /** @var array<string,array{address:int,quantity:int}> zusammenhängende Lesebereiche */
+    /**
+     * Zusammenhängende Lesebereiche. Die ersten vier kennt jede Anlage; die übrigen kamen später dazu
+     * und stehen hinten, damit ein Bereich, den eine Firmware nicht kennt, die übrigen nicht aufhält.
+     * @var array<string,array{address:int,quantity:int}>
+     */
     public const BLOCKS = [
         'inverter' => ['address' => 1024, 'quantity' => 65],
         'battery'  => ['address' => 256, 'quantity' => 40],
         'grid'     => ['address' => 16, 'quantity' => 19],
         'pvmeter'  => ['address' => 161, 'quantity' => 2],
+        'gridext'  => ['address' => 35, 'quantity' => 20],
+        'settings' => ['address' => 2048, 'quantity' => 5],
+        'windows'  => ['address' => 2127, 'quantity' => 11],
+        'system'   => ['address' => 2256, 'quantity' => 6],
     ];
 
     /** @var array<string,array<string,array{0:int,1:string,2:float}>> Block => Wert => [Adresse, Typ, Faktor] */
@@ -22,48 +30,135 @@ final class AlphaRegisters
         'grid' => [
             'grid_feed_in_energy'     => [16, 'u32', 0.01],
             'grid_consumption_energy' => [18, 'u32', 0.01],
+            'grid_voltage_l1'         => [20, 'u16', 0.1],
+            'grid_voltage_l2'         => [21, 'u16', 0.1],
+            'grid_voltage_l3'         => [22, 'u16', 0.1],
+            'grid_current_l1'         => [23, 'i16', 0.1],
+            'grid_current_l2'         => [24, 'i16', 0.1],
+            'grid_current_l3'         => [25, 'i16', 0.1],
             'grid_frequency_raw'      => [26, 'u16', 1.0],
             'grid_power_l1'           => [27, 'i32', 1.0],
             'grid_power_l2'           => [29, 'i32', 1.0],
             'grid_power_l3'           => [31, 'i32', 1.0],
             'grid_power'              => [33, 'i32', 1.0],
         ],
+        'gridext' => [
+            'grid_reactive_power_l1' => [35, 'i32', 1.0],
+            'grid_reactive_power_l2' => [37, 'i32', 1.0],
+            'grid_reactive_power_l3' => [39, 'i32', 1.0],
+            'grid_reactive_power'    => [41, 'i32', 1.0],
+            'grid_apparent_power_l1' => [43, 'i32', 1.0],
+            'grid_apparent_power_l2' => [45, 'i32', 1.0],
+            'grid_apparent_power_l3' => [47, 'i32', 1.0],
+            'grid_apparent_power'    => [49, 'i32', 1.0],
+            'grid_power_factor_l1'   => [51, 'i16', 0.01],
+            'grid_power_factor_l2'   => [52, 'i16', 0.01],
+            'grid_power_factor_l3'   => [53, 'i16', 0.01],
+            'grid_power_factor'      => [54, 'i16', 0.01],
+        ],
         'pvmeter' => [
             'pv_meter_power' => [161, 'i32', 1.0],
         ],
         'battery' => [
-            'battery_voltage'          => [256, 'u16', 0.1],
-            'battery_current'          => [257, 'i16', 0.1],
-            'battery_soc'              => [258, 'u16', 0.1],
-            'battery_charge_energy'    => [288, 'u32', 0.1],
-            'battery_discharge_energy' => [290, 'u32', 0.1],
-            'battery_power'            => [294, 'i16', 1.0],
+            'battery_voltage'             => [256, 'u16', 0.1],
+            'battery_current'             => [257, 'i16', 0.1],
+            'battery_soc'                 => [258, 'u16', 0.1],
+            'battery_status'              => [259, 'u16', 1.0],
+            'battery_min_cell_voltage'    => [263, 'u16', 0.001],
+            'battery_max_cell_voltage'    => [266, 'u16', 0.001],
+            'battery_min_cell_temperature' => [269, 'i16', 0.1],
+            'battery_max_cell_temperature' => [272, 'i16', 0.1],
+            'battery_modules'             => [280, 'u16', 1.0],
+            'battery_capacity'            => [281, 'u16', 0.1],
+            'battery_soh'                 => [283, 'u16', 0.1],
+            'battery_warning'             => [284, 'u32', 1.0],
+            'battery_fault'               => [286, 'u32', 1.0],
+            'battery_charge_energy'       => [288, 'u32', 0.1],
+            'battery_discharge_energy'    => [290, 'u32', 0.1],
+            'battery_grid_charge_energy'  => [292, 'u32', 0.1],
+            'battery_power'               => [294, 'i16', 1.0],
         ],
         'inverter' => [
-            'inverter_power_l1' => [1030, 'i32', 1.0],
-            'inverter_power_l2' => [1032, 'i32', 1.0],
-            'inverter_power_l3' => [1034, 'i32', 1.0],
-            'inverter_power' => [1036, 'i32', 1.0],
-            // je String vier Register: Spannung (0,1 V), Strom, Leistung (32 Bit)
+            'inverter_voltage_l1' => [1024, 'u16', 0.1],
+            'inverter_voltage_l2' => [1025, 'u16', 0.1],
+            'inverter_voltage_l3' => [1026, 'u16', 0.1],
+            'inverter_current_l1' => [1027, 'i16', 0.1],
+            'inverter_current_l2' => [1028, 'i16', 0.1],
+            'inverter_current_l3' => [1029, 'i16', 0.1],
+            'inverter_power_l1'   => [1030, 'i32', 1.0],
+            'inverter_power_l2'   => [1032, 'i32', 1.0],
+            'inverter_power_l3'   => [1034, 'i32', 1.0],
+            'inverter_power'      => [1036, 'i32', 1.0],
+            'backup_voltage_l1'   => [1038, 'u16', 0.1],
+            'backup_voltage_l2'   => [1039, 'u16', 0.1],
+            'backup_voltage_l3'   => [1040, 'u16', 0.1],
+            'backup_current_l1'   => [1041, 'u16', 0.1],
+            'backup_current_l2'   => [1042, 'u16', 0.1],
+            'backup_current_l3'   => [1043, 'u16', 0.1],
+            'backup_power_l1'     => [1044, 'i32', 1.0],
+            'backup_power_l2'     => [1046, 'i32', 1.0],
+            'backup_power_l3'     => [1048, 'i32', 1.0],
+            'backup_power'        => [1050, 'i32', 1.0],
+            // je String vier Register: Spannung (0,1 V), Strom (0,1 A), Leistung (32 Bit)
             'pv1_voltage'    => [1053, 'u16', 0.1],
-            'pv2_voltage'    => [1057, 'u16', 0.1],
-            'pv3_voltage'    => [1061, 'u16', 0.1],
-            'pv4_voltage'    => [1065, 'u16', 0.1],
-            'pv5_voltage'    => [1069, 'u16', 0.1],
-            'pv6_voltage'    => [1073, 'u16', 0.1],
+            'pv1_current'    => [1054, 'u16', 0.1],
             'pv1_power'      => [1055, 'u32', 1.0],
+            'pv2_voltage'    => [1057, 'u16', 0.1],
+            'pv2_current'    => [1058, 'u16', 0.1],
             'pv2_power'      => [1059, 'u32', 1.0],
+            'pv3_voltage'    => [1061, 'u16', 0.1],
+            'pv3_current'    => [1062, 'u16', 0.1],
             'pv3_power'      => [1063, 'u32', 1.0],
+            'pv4_voltage'    => [1065, 'u16', 0.1],
+            'pv4_current'    => [1066, 'u16', 0.1],
             'pv4_power'      => [1067, 'u32', 1.0],
+            'pv5_voltage'    => [1069, 'u16', 0.1],
+            'pv5_current'    => [1070, 'u16', 0.1],
             'pv5_power'      => [1071, 'u32', 1.0],
+            'pv6_voltage'    => [1073, 'u16', 0.1],
+            'pv6_current'    => [1074, 'u16', 0.1],
             'pv6_power'      => [1075, 'u32', 1.0],
+            'inverter_temperature' => [1077, 'i16', 0.1],
+            'inverter_warning1'    => [1078, 'u32', 1.0],
+            'inverter_warning2'    => [1080, 'u32', 1.0],
+            'inverter_fault1'      => [1082, 'u32', 1.0],
+            'inverter_fault2'      => [1084, 'u32', 1.0],
             'pv_energy'      => [1086, 'u32', 0.1],
             'inverter_mode'  => [1088, 'u16', 1.0],
+        ],
+        'settings' => [
+            'feed_in_limit'          => [2048, 'u16', 1.0],
+            'pv_capacity'            => [2049, 'u32', 1.0],
+            'pv_capacity_ac_coupled' => [2051, 'u32', 1.0],
+        ],
+        // Zeitsteuerung der Anlage; Zeiten in vollen Stunden laut Registerliste
+        'windows' => [
+            'window_control'          => [2127, 'u16', 1.0],
+            'window_reserve_soc'      => [2128, 'u16', 0.1],
+            'window_discharge_start1' => [2129, 'u16', 1.0],
+            'window_discharge_end1'   => [2130, 'u16', 1.0],
+            'window_discharge_start2' => [2131, 'u16', 1.0],
+            'window_discharge_end2'   => [2132, 'u16', 1.0],
+            'window_charge_limit'     => [2133, 'u16', 0.1],
+            'window_charge_start1'    => [2134, 'u16', 1.0],
+            'window_charge_end1'      => [2135, 'u16', 1.0],
+            'window_charge_start2'    => [2136, 'u16', 1.0],
+            'window_charge_end2'      => [2137, 'u16', 1.0],
+        ],
+        'system' => [
+            'pv_energy_ac_coupled' => [2256, 'u32', 0.1],
+            'system_pv_energy'     => [2258, 'u32', 0.1],
+            'system_fault'         => [2260, 'u32', 1.0],
         ],
     ];
 
     private const BATTERY_KEYS = ['battery_voltage', 'battery_current', 'battery_soc', 'battery_charge_energy',
-        'battery_discharge_energy', 'battery_power', 'battery_state'];
+        'battery_discharge_energy', 'battery_power', 'battery_state', 'battery_status', 'battery_min_cell_voltage',
+        'battery_max_cell_voltage', 'battery_min_cell_temperature', 'battery_max_cell_temperature', 'battery_modules',
+        'battery_capacity', 'battery_soh', 'battery_warning', 'battery_fault', 'battery_grid_charge_energy',
+        'window_control', 'window_reserve_soc', 'window_discharge_start1', 'window_discharge_end1', 'window_discharge_start2',
+        'window_discharge_end2', 'window_charge_limit', 'window_charge_start1', 'window_charge_end1', 'window_charge_start2',
+        'window_charge_end2'];
 
     /** Leistung in Watt, unter der der Speicher als ruhend gilt */
     private const IDLE_WATT = 30;
@@ -81,7 +176,7 @@ final class AlphaRegisters
         $values = [];
         foreach (self::MAP[$block] as $name => [$address, $type, $factor]) {
             $raw = self::number(substr($data, ($address - $def['address']) * 2, 4), $type);
-            $values[$name] = $factor === 1.0 ? $raw : round($raw * $factor, 2);
+            $values[$name] = $factor === 1.0 ? $raw : round($raw * $factor, 3);
         }
         return $values;
     }

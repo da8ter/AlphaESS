@@ -34,6 +34,59 @@ class AlphaESSInverter extends IPSModuleStrict
 
     private const COUNTERS = ['grid_feed_in_energy', 'grid_consumption_energy', 'pv_energy'];
 
+    /**
+     * Weitere Modbus-Werte; die Variable entsteht mit dem ersten Wert und entfällt im Modus „Nur Cloud“.
+     * Belegung und Skalierung nach der Registerliste, an einer Anlage noch nicht alle geprüft.
+     * @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int,6?:string}>
+     */
+    private const MODBUS_EXTRA = [
+        'grid_voltage_l1'        => ['GridVoltageL1', 'Grid voltage L1', 'plug', ' V', 1, 100],
+        'grid_voltage_l2'        => ['GridVoltageL2', 'Grid voltage L2', 'plug', ' V', 1, 101],
+        'grid_voltage_l3'        => ['GridVoltageL3', 'Grid voltage L3', 'plug', ' V', 1, 102],
+        'grid_current_l1'        => ['GridCurrentL1', 'Grid current L1', 'plug', ' A', 1, 103],
+        'grid_current_l2'        => ['GridCurrentL2', 'Grid current L2', 'plug', ' A', 1, 104],
+        'grid_current_l3'        => ['GridCurrentL3', 'Grid current L3', 'plug', ' A', 1, 105],
+        'grid_reactive_power_l1' => ['GridReactivePowerL1', 'Grid reactive power L1', 'plug', ' var', 0, 106],
+        'grid_reactive_power_l2' => ['GridReactivePowerL2', 'Grid reactive power L2', 'plug', ' var', 0, 107],
+        'grid_reactive_power_l3' => ['GridReactivePowerL3', 'Grid reactive power L3', 'plug', ' var', 0, 108],
+        'grid_reactive_power'    => ['GridReactivePower', 'Grid reactive power', 'plug', ' var', 0, 109],
+        'grid_apparent_power_l1' => ['GridApparentPowerL1', 'Grid apparent power L1', 'plug', ' VA', 0, 110],
+        'grid_apparent_power_l2' => ['GridApparentPowerL2', 'Grid apparent power L2', 'plug', ' VA', 0, 111],
+        'grid_apparent_power_l3' => ['GridApparentPowerL3', 'Grid apparent power L3', 'plug', ' VA', 0, 112],
+        'grid_apparent_power'    => ['GridApparentPower', 'Grid apparent power', 'plug', ' VA', 0, 113],
+        'grid_power_factor_l1'   => ['GridPowerFactorL1', 'Grid power factor L1', 'plug', '', 2, 114],
+        'grid_power_factor_l2'   => ['GridPowerFactorL2', 'Grid power factor L2', 'plug', '', 2, 115],
+        'grid_power_factor_l3'   => ['GridPowerFactorL3', 'Grid power factor L3', 'plug', '', 2, 116],
+        'grid_power_factor'      => ['GridPowerFactor', 'Grid power factor', 'plug', '', 2, 117],
+        'inverter_voltage_l1'    => ['InverterVoltageL1', 'Inverter voltage L1', 'bolt', ' V', 1, 120],
+        'inverter_voltage_l2'    => ['InverterVoltageL2', 'Inverter voltage L2', 'bolt', ' V', 1, 121],
+        'inverter_voltage_l3'    => ['InverterVoltageL3', 'Inverter voltage L3', 'bolt', ' V', 1, 122],
+        'inverter_current_l1'    => ['InverterCurrentL1', 'Inverter current L1', 'bolt', ' A', 1, 123],
+        'inverter_current_l2'    => ['InverterCurrentL2', 'Inverter current L2', 'bolt', ' A', 1, 124],
+        'inverter_current_l3'    => ['InverterCurrentL3', 'Inverter current L3', 'bolt', ' A', 1, 125],
+        'inverter_temperature'   => ['InverterTemperature', 'Inverter temperature', 'temperature-half', ' °C', 1, 126],
+        'backup_power'           => ['BackupPower', 'Backup power', 'car-battery', ' W', 0, 130],
+        'backup_power_l1'        => ['BackupPowerL1', 'Backup power L1', 'car-battery', ' W', 0, 131],
+        'backup_power_l2'        => ['BackupPowerL2', 'Backup power L2', 'car-battery', ' W', 0, 132],
+        'backup_power_l3'        => ['BackupPowerL3', 'Backup power L3', 'car-battery', ' W', 0, 133],
+        'backup_voltage_l1'      => ['BackupVoltageL1', 'Backup voltage L1', 'car-battery', ' V', 1, 134],
+        'backup_voltage_l2'      => ['BackupVoltageL2', 'Backup voltage L2', 'car-battery', ' V', 1, 135],
+        'backup_voltage_l3'      => ['BackupVoltageL3', 'Backup voltage L3', 'car-battery', ' V', 1, 136],
+        'backup_current_l1'      => ['BackupCurrentL1', 'Backup current L1', 'car-battery', ' A', 1, 137],
+        'backup_current_l2'      => ['BackupCurrentL2', 'Backup current L2', 'car-battery', ' A', 1, 138],
+        'backup_current_l3'      => ['BackupCurrentL3', 'Backup current L3', 'car-battery', ' A', 1, 139],
+        'system_pv_energy'       => ['SystemPVEnergy', 'PV energy of the system', 'solar-panel', ' kWh', 1, 140],
+        'pv_energy_ac_coupled'   => ['PVEnergyACCoupled', 'PV energy (AC-coupled)', 'solar-panel', ' kWh', 1, 141],
+        'pv_capacity'            => ['PVCapacity', 'PV capacity', 'solar-panel', ' W', 0, 142],
+        'pv_capacity_ac_coupled' => ['PVCapacityACCoupled', 'PV capacity (AC-coupled)', 'solar-panel', ' W', 0, 143],
+        'feed_in_limit'          => ['FeedInLimit', 'Feed-in limit', 'arrow-up', ' %', 0, 144],
+        'inverter_warning1'      => ['InverterWarning1', 'Inverter warning code 1', 'triangle-exclamation', '', 0, 150, 'int'],
+        'inverter_warning2'      => ['InverterWarning2', 'Inverter warning code 2', 'triangle-exclamation', '', 0, 151, 'int'],
+        'inverter_fault1'        => ['InverterFault1', 'Inverter fault code 1', 'circle-exclamation', '', 0, 152, 'int'],
+        'inverter_fault2'        => ['InverterFault2', 'Inverter fault code 2', 'circle-exclamation', '', 0, 153, 'int'],
+        'system_fault'           => ['SystemFault', 'System fault code', 'circle-exclamation', '', 0, 154, 'int'],
+    ];
+
     /** @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int}> entstehen mit dem ersten Wert (Phasen auch über Modbus, sonst nur Cloud) */
     private const CLOUD_VARIABLES = [
         'inverter_power_l1'      => ['InverterPowerL1', 'Inverter power L1', 'bolt', ' W', 0, 51],
@@ -72,7 +125,8 @@ class AlphaESSInverter extends IPSModuleStrict
             $this->MaintainVariable("PV{$i}Power", sprintf($this->Translate('PV string %d'), $i), VARIABLETYPE_FLOAT,
                 AlphaPresentations::value('solar-panel', ' W'), 10 + $i, $i <= $strings);
         }
-        $this->stringVoltages($this->alphaCloudOnly());
+        $this->stringDetails($this->alphaCloudOnly());
+        $this->alphaModbusExtra(self::MODBUS_EXTRA, [], $this->alphaCloudOnly());
         $this->MaintainVariable('PVMeterPower', $this->Translate('PV power (AC-coupled)'), VARIABLETYPE_FLOAT,
             AlphaPresentations::value('solar-panel', ' W'), 20, $this->ReadPropertyBoolean('PVMeter'));
         $this->modbusOnly([]);
@@ -124,12 +178,15 @@ class AlphaESSInverter extends IPSModuleStrict
         }
     }
 
-    /** Spannung je String gibt es nur über Modbus; im Modus „Nur Cloud“ entfällt sie. */
-    private function stringVoltages(bool $cloudOnly): void
+    /** Spannung und Strom je String gibt es nur über Modbus; im Modus „Nur Cloud“ entfallen sie. */
+    private function stringDetails(bool $cloudOnly): void
     {
         for ($i = 1, $n = $this->strings(); $i <= self::MAX_STRINGS; $i++) {
+            $keep = $i <= $n && !$cloudOnly;
             $this->MaintainVariable("PV{$i}Voltage", sprintf($this->Translate('PV string %d voltage'), $i), VARIABLETYPE_FLOAT,
-                AlphaPresentations::value('bolt', ' V', 1), 20 + $i, $i <= $n && !$cloudOnly);
+                AlphaPresentations::value('bolt', ' V', 1), 20 + $i, $keep);
+            $this->MaintainVariable("PV{$i}Current", sprintf($this->Translate('PV string %d current'), $i), VARIABLETYPE_FLOAT,
+                AlphaPresentations::value('bolt', ' A', 1), 26 + $i, $keep);
         }
     }
 
@@ -138,12 +195,15 @@ class AlphaESSInverter extends IPSModuleStrict
     {
         $this->modbusOnly($values);
         $cloudOnly = $this->alphaCloudOnly();
-        $this->stringVoltages($cloudOnly);
+        $this->stringDetails($cloudOnly);
         for ($i = 1, $n = $cloudOnly ? 0 : $this->strings(); $i <= $n; $i++) {
-            if (is_numeric($values["pv{$i}_voltage"] ?? null)) {
-                $this->SetValue("PV{$i}Voltage", (float) $values["pv{$i}_voltage"]);
+            foreach (['Voltage' => 'voltage', 'Current' => 'current'] as $suffix => $field) {
+                if (is_numeric($values["pv{$i}_{$field}"] ?? null)) {
+                    $this->SetValue("PV{$i}{$suffix}", (float) $values["pv{$i}_{$field}"]);
+                }
             }
         }
+        $this->alphaModbusExtra(self::MODBUS_EXTRA, $values, $cloudOnly);
         foreach (self::VARIABLES as $key => [$ident]) {
             if (!isset($values[$key]) || !is_numeric($values[$key])) {
                 continue;

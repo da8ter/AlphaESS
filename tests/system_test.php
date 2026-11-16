@@ -14,7 +14,7 @@ $bat = alphaDevice(ALPHA_BATTERY, $sys);
 check(World::timer($sys, 'Poll')['interval'] === 10000 && World::timer($sys, 'CloudTick')['interval'] === 0, 'Abfrage alle 10 s, Cloud-Takt aus ohne Zugangsdaten');
 check(World::value($sys, 'ModbusState') === 0 && World::value($sys, 'CloudState') === 0, 'Zustände vor dem ersten Lauf: nicht verbunden, nicht eingerichtet');
 Kernel::advance(10);
-check($modbusRequests($gw) === '1024+65,256+40,16+19,161+2', 'vier Blöcke je Zyklus: ' . $modbusRequests($gw));
+check($modbusRequests($gw) === '1024+65,256+40,16+19,161+2,35+20,2048+5,2127+11,2256+6', 'acht Blöcke je Zyklus, die neuen hinten: ' . $modbusRequests($gw));
 check(World::value($sys, 'ModbusState') === 1, 'Modbus verbunden');
 check(World::value($inv, 'PVPower') === 3500.0 && World::value($inv, 'PV1Power') === 1800.0 && World::value($inv, 'PV2Power') === 1700.0, 'PV gesamt und je String');
 check(World::value($inv, 'GridPower') === -500.0 && World::value($inv, 'GridPowerL1') === -400.0 && World::value($inv, 'LoadPower') === 1500.0, 'Netz und Verbrauch');
@@ -219,11 +219,18 @@ section('Nur Cloud: Leistungen ohne Modbus');
 $cloud = alphaCloud($sys);
 $inv = alphaDevice(ALPHA_INVERTER, $sys);
 $bat = alphaDevice(ALPHA_BATTERY, $sys);
+Kernel::advance(10);
+check(in_array('SOH', World::idents($bat), true) && in_array('WindowControl', World::idents($bat), true) && in_array('InverterTemperature', World::idents($inv), true),
+    'mit Modbus: Zusatzwerte vorhanden');
+$gw->requests = [];
 IPS_SetProperty($sys, 'CloudOnly', true);
 IPS_ApplyChanges($sys);
 check(World::timer($sys, 'Poll')['interval'] === 0 && World::value($sys, 'ModbusState') === 3, 'kein Modbus-Takt, Zustand „nicht genutzt“');
 check(array_intersect(['Voltage', 'Current'], World::idents($bat)) === [] && array_intersect(['Frequency', 'Mode', 'PV1Voltage'], World::idents($inv)) === [],
     'Spannung, Strom, Netzfrequenz und Betriebsart verschwinden: die Cloud liefert sie nicht');
+check(array_intersect(['SOH', 'WindowControl', 'WindowChargeStart1', 'MinCellVoltage'], World::idents($bat)) === []
+    && array_intersect(['InverterTemperature', 'GridVoltageL1', 'BackupPower', 'PV1Current', 'SystemFault'], World::idents($inv)) === [],
+    'die Modbus-Zusatzwerte verschwinden ebenso');
 $late = alphaDevice(ALPHA_BATTERY, $sys);
 check(!in_array('Voltage', World::idents($late), true) && in_array('SOC', World::idents($late), true), 'ein später angelegter Speicher erfährt den Modus beim Anschluss');
 Kernel::advance(120);
@@ -257,6 +264,21 @@ check(World::timer($sys, 'Poll')['interval'] === 10000 && World::value($sys, 'Mo
 Kernel::advance(10);
 check(World::value($bat, 'Voltage') === 51.2 && World::value($inv, 'PV1Voltage') === 387.1 && World::value($inv, 'Frequency') === 50.01 && World::value($inv, 'Mode') === 2 && Kernel::$warnings === [],
     'zurück auf Modbus: die Variablen sind wieder da und bekommen Werte');
+
+section('Firmware ohne die neuen Lesebereiche');
+[$sys, $gw] = alphaWorld();
+foreach ([[35, 54], [2048, 2052], [2127, 2137], [2256, 2261]] as [$from, $to]) {
+    for ($a = $from; $a <= $to; $a++) {
+        unset($gw->registers[$a]);
+    }
+}
+$inv = alphaDevice(ALPHA_INVERTER, $sys);
+$bat = alphaDevice(ALPHA_BATTERY, $sys);
+Kernel::advance(10);
+check(World::value($sys, 'ModbusState') === 1 && World::value($inv, 'PVPower') === 3500.0 && World::value($inv, 'InverterTemperature') === 38.2,
+    'die bekannten Bereiche kommen weiter an');
+check(array_intersect(['GridReactivePower', 'FeedInLimit', 'SystemFault'], World::idents($inv)) === [] && !in_array('WindowControl', World::idents($bat), true),
+    'aus fehlenden Bereichen entstehen keine leeren Variablen');
 
 section('Nur Cloud: alles, was die Cloud liefert');
 [$sys, $gw] = alphaWorld();
@@ -297,8 +319,17 @@ section('Ohne Cloud: keine leeren Zusatzvariablen');
 $inv = alphaDevice(ALPHA_INVERTER, $sys);
 $bat = alphaDevice(ALPHA_BATTERY, $sys);
 Kernel::advance(30);
-check(!in_array('Capacity', World::idents($bat), true) && !in_array('GridChargeToday', World::idents($bat), true)
-    && !in_array('EmsStatus', World::idents($sys), true), 'nur Modbus: keine Variablen, die nur die Cloud kennt');
+check(!in_array('UsableCapacity', World::idents($bat), true) && !in_array('EmsStatus', World::idents($sys), true), 'nur Modbus: keine Variablen, die nur die Cloud kennt');
+check(World::value($bat, 'Capacity') === 15.1 && World::value($bat, 'SOH') === 98.7 && World::value($bat, 'MinCellTemperature') === -1.5
+    && World::value($bat, 'MaxCellVoltage') === 3.345 && World::value($bat, 'GridChargeEnergy') === 45.6 && World::value($bat, 'GridChargeToday') === 0.0
+    && World::value($bat, 'Modules') === 3 && World::value($bat, 'ReserveSOC') === 10.0, 'nur Modbus: Speicher-Zusatzwerte');
+check(World::value($bat, 'WindowControl') === 1 && World::value($bat, 'WindowChargeLimit') === 90.0
+    && World::value($bat, 'WindowChargeStart1') === AlphaTimeGrid::toTimestamp('01:00') && World::value($bat, 'WindowChargeEnd1') === AlphaTimeGrid::toTimestamp('05:00'),
+    'nur Modbus: Zeitsteuerung der Anlage lesend');
+check(World::value($inv, 'InverterTemperature') === 38.2 && World::value($inv, 'InverterCurrentL1') === -3.5 && World::value($inv, 'GridVoltageL1') === 230.1
+    && World::value($inv, 'GridPowerFactor') === -0.95 && World::value($inv, 'GridReactivePower') === -120.0 && World::value($inv, 'PVCapacity') === 9800.0
+    && World::value($inv, 'FeedInLimit') === 70.0 && World::value($inv, 'SystemPVEnergy') === 9900.0 && World::value($inv, 'SystemFault') === 0
+    && World::value($inv, 'PV1Current') === 4.6 && World::value($inv, 'BackupPower') === 0.0, 'nur Modbus: Wechselrichter-, Netz-, Notstrom- und Anlagenwerte');
 // Zähler der Registerkarte: Bezug 2345,67, Einspeisung 1234,56, PV 9876,5, Laden 432,1, Entladen 321,0
 check(GetValue(World::varId($inv, 'LoadEnergy')) === 10876.51 && GetValue(World::varId($inv, 'SelfConsumption')) === 87.5
     && GetValue(World::varId($inv, 'SelfSufficiency')) === 78.4, 'nur Modbus: Verbrauch, Eigenverbrauch und Autarkie aus den Zählern');

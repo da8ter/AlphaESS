@@ -41,7 +41,7 @@ section('Wechselrichter');
 [$sys, $gw] = alphaWorld();
 $inv = alphaDevice(ALPHA_INVERTER, $sys);
 check(World::idents($inv) === ['Frequency', 'GridConsumptionEnergy', 'GridFeedInEnergy', 'GridPower', 'GridPowerL1', 'GridPowerL2', 'GridPowerL3',
-    'InverterPower', 'LoadPower', 'Mode', 'PV1Power', 'PV1Voltage', 'PV2Power', 'PV2Voltage', 'PVEnergy', 'PVPower'], 'Variablen mit zwei Strings: ' . implode(',', World::idents($inv)));
+    'InverterPower', 'LoadPower', 'Mode', 'PV1Current', 'PV1Power', 'PV1Voltage', 'PV2Current', 'PV2Power', 'PV2Voltage', 'PVEnergy', 'PVPower'], 'Variablen mit zwei Strings: ' . implode(',', World::idents($inv)));
 $v = World::variable($inv, 'PVPower');
 check($v['name'] === 'PV-Leistung' && $v['presentation'] === ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'solar-panel', 'SUFFIX' => ' W', 'DIGITS' => 0],
     'PV-Leistung: übersetzter Name, Wertanzeige in Watt');
@@ -64,13 +64,18 @@ check(json_decode((string) Kernel::callPublic($inv, 'GetCompatibleParents', []),
 
 section('Speicher');
 $bat = alphaDevice(ALPHA_BATTERY, $sys);
-check(World::idents($bat) === ['ChargeEnergy', 'ChargeToday', 'Current', 'DischargeEnergy', 'DischargeToday', 'Power', 'SOC', 'State', 'Voltage'],
-    'ohne Cloud-Steuerung nur Messwerte (Tageswerte ohne Cloud aus den Zählern)');
+$windowIdents = static fn (int $id): array => array_values(array_filter(World::idents($id), static fn (string $i): bool => str_starts_with($i, 'Window')));
+$plain = World::idents($bat);
+check(array_diff(['ChargeEnergy', 'ChargeToday', 'Current', 'DischargeEnergy', 'Power', 'SOC', 'SOH', 'State', 'Voltage'], $plain) === [] && !in_array('ChargeStart1', $plain, true)
+    && count($windowIdents($bat)) === 10, 'ohne Cloud-Steuerung: Messwerte und die Zeitsteuerung der Anlage nur lesend');
+check(World::variable($bat, 'WindowChargeStart1')['action'] === 0, 'Zeitsteuerung der Anlage ist nicht schaltbar');
+check(presentationFaults($bat) === [] && presentationFaults($inv) === [] && in_array('InverterTemperature', World::idents($inv), true),
+    'Zusatzwerte: nur erlaubte Darstellungsparameter');
 $state = json_decode((string) World::variable($bat, 'State')['presentation']['INTERVALS'], true);
 check(array_column($state, 'ConstantValue') === ['Ruht', 'Lädt', 'Entlädt'] && array_column($state, 'IntervalMinValue') === [0, 1, 2], 'Zustand als Wertanzeige mit drei beschrifteten Intervallen');
 IPS_SetProperty($bat, 'CloudControl', true);
 IPS_ApplyChanges($bat);
-check(count(World::idents($bat)) === 21, 'mit Cloud-Steuerung zwölf Einstellungen dazu');
+check(count(World::idents($bat)) === count($plain) - 10 + 12 && $windowIdents($bat) === [], 'mit Cloud-Steuerung zwölf Einstellungen dazu, die lesende Zeitsteuerung entfällt');
 $clock = World::variable($bat, 'ChargeStart1');
 check($clock['type'] === VARIABLETYPE_INTEGER && $clock['presentation'] === ['PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME, 'DATE' => 0, 'TIME' => 1] && $clock['action'] === $bat,
     'Fensterzeit: Datum/Uhrzeit ohne Datum, schaltbar');
@@ -82,7 +87,7 @@ $try = alphaAction($bat, 'GridCharge', true);
 check(!$try['ok'] && str_contains($try['message'], 'Cloud-Zugang') && World::value($bat, 'GridCharge') === false, 'ohne Cloud-Zugang scheitert die Einstellung mit Meldung, der Wert bleibt');
 IPS_SetProperty($bat, 'CloudControl', false);
 IPS_ApplyChanges($bat);
-check(count(World::idents($bat)) === 9, 'Cloud-Steuerung aus: Einstellungen wieder weg');
+check(World::idents($bat) === $plain, 'Cloud-Steuerung aus: Einstellungen wieder weg, lesende Zeitsteuerung wieder da');
 
 section('Wallboxen');
 [$sys, $gw] = alphaWorld();

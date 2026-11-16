@@ -81,6 +81,41 @@ trait AlphaDevice
     }
 
     /**
+     * Zusatzwerte, die nur Modbus liefert: die Variable entsteht mit dem ersten Wert (ein Lesebereich, den die
+     * Firmware nicht kennt, hinterlässt so keine leeren Variablen) und entfällt im Modus „Nur Cloud“.
+     * Art: float, int (Codes, Anzahl) oder clock (volle Stunde als Uhrzeit).
+     * @param array<string,array{0:string,1:string,2:string,3:string,4:int,5:int,6?:string}> $table Wert => [Ident, Name, Icon, Suffix, Stellen, Position, Art]
+     * @param array<string,mixed> $values
+     */
+    private function alphaModbusExtra(array $table, array $values, bool $cloudOnly): void
+    {
+        foreach ($table as $key => $row) {
+            [$ident, $name, $icon, $suffix, $digits, $position] = $row;
+            $kind = $row[6] ?? 'float';
+            if ($cloudOnly) {
+                $this->MaintainVariable($ident, '', VARIABLETYPE_FLOAT, [], 0, false);
+                continue;
+            }
+            if (!is_numeric($values[$key] ?? null)) {
+                continue;
+            }
+            $value = (float) $values[$key];
+            if ($kind === 'clock' && ($value < 0 || $value > 23)) {
+                continue;
+            }
+            [$type, $presentation, $value] = match ($kind) {
+                'int'   => [VARIABLETYPE_INTEGER, AlphaPresentations::value($icon, $suffix), (int) $value],
+                'clock' => [VARIABLETYPE_INTEGER, AlphaPresentations::clock(), AlphaTimeGrid::toTimestamp(sprintf('%02d:00', (int) $value))],
+                default => [VARIABLETYPE_FLOAT, AlphaPresentations::value($icon, $suffix, $digits), $value],
+            };
+            $this->MaintainVariable($ident, $this->Translate($name), $type, $presentation, $position, true);
+            if ($this->GetValue($ident) !== $value) {
+                $this->SetValue($ident, $value);
+            }
+        }
+    }
+
+    /**
      * Läuft die Anlage nur über die Cloud? Das System schickt die Angabe mit seinem Stand und nach jeder
      * Änderung; die Instanz merkt sie sich, damit sie schon vor dem ersten Paket die richtigen Variablen trägt.
      * @param array<string,mixed> $values

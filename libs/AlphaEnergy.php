@@ -18,7 +18,11 @@ final class AlphaEnergy
         'grid_consumption_energy'  => ['grid_consumption_today', 'inverter'],
         'battery_charge_energy'    => ['battery_charge_today', 'battery'],
         'battery_discharge_energy' => ['battery_discharge_today', 'battery'],
+        'battery_grid_charge_energy' => ['battery_grid_charge_today', 'battery'],
     ];
+
+    /** Zähler, die nicht jede Anlage liefert; ohne sie fehlt nur ihr Tageswert */
+    private const OPTIONAL = ['battery_grid_charge_energy'];
 
     /**
      * Nur vollständige, positive Zählerstände; ein Lesefehler liefert sonst 0 und verdirbt jede Rechnung.
@@ -33,6 +37,11 @@ final class AlphaEnergy
                 return null;
             }
             $out[$key] = (float) $values[$key];
+        }
+        foreach (self::OPTIONAL as $key) {
+            if (is_numeric($values[$key] ?? null) && (float) $values[$key] > 0.0) {
+                $out[$key] = (float) $values[$key];
+            }
         }
         return $out;
     }
@@ -97,14 +106,16 @@ final class AlphaEnergy
     public static function today(array $c, array $start, string $date): array
     {
         $base = ($start['date'] ?? '') === $date && is_array($start['counters'] ?? null) ? $start['counters'] : [];
-        foreach (self::COUNTERS as $key) {
-            if (!is_numeric($base[$key] ?? null) || $c[$key] < (float) $base[$key]) {
-                $base[$key] = $c[$key];
+        foreach ($c as $key => $value) {
+            if (!is_numeric($base[$key] ?? null) || $value < (float) $base[$key]) {
+                $base[$key] = $value;
             }
         }
         $out = ['inverter' => [], 'battery' => []];
         foreach (self::TODAY as $key => [$name, $kind]) {
-            $out[$kind][$name] = round($c[$key] - (float) $base[$key], 2);
+            if (isset($c[$key])) {
+                $out[$kind][$name] = round($c[$key] - (float) $base[$key], 2);
+            }
         }
         return [$out, ['date' => $date, 'counters' => $base]];
     }

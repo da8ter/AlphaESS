@@ -31,6 +31,42 @@ class AlphaESSBattery extends IPSModuleStrict
 
     private const COUNTERS = ['battery_charge_energy', 'battery_discharge_energy'];
 
+    /**
+     * Weitere Modbus-Werte; die Variable entsteht mit dem ersten Wert und entfällt im Modus „Nur Cloud“.
+     * Belegung und Skalierung nach der Registerliste, an einer Anlage noch nicht alle geprüft.
+     * @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int,6?:string}>
+     */
+    private const MODBUS_EXTRA = [
+        'battery_soh'                  => ['SOH', 'State of health', 'heart-pulse', ' %', 1, 42],
+        'battery_grid_charge_energy'   => ['GridChargeEnergy', 'Charged from grid', 'plug', ' kWh', 1, 55],
+        'battery_modules'              => ['Modules', 'Battery modules', 'layer-group', '', 0, 63, 'int'],
+        'battery_min_cell_voltage'     => ['MinCellVoltage', 'Lowest cell voltage', 'bolt', ' V', 3, 70],
+        'battery_max_cell_voltage'     => ['MaxCellVoltage', 'Highest cell voltage', 'bolt', ' V', 3, 71],
+        'battery_min_cell_temperature' => ['MinCellTemperature', 'Lowest cell temperature', 'temperature-half', ' °C', 1, 72],
+        'battery_max_cell_temperature' => ['MaxCellTemperature', 'Highest cell temperature', 'temperature-half', ' °C', 1, 73],
+        'battery_status'               => ['BatteryStatus', 'Battery status code', 'circle-info', '', 0, 80, 'int'],
+        'battery_warning'              => ['BatteryWarning', 'Battery warning code', 'triangle-exclamation', '', 0, 81, 'int'],
+        'battery_fault'                => ['BatteryFault', 'Battery fault code', 'circle-exclamation', '', 0, 82, 'int'],
+        'window_reserve_soc'           => ['ReserveSOC', 'Backup reserve', 'battery-quarter', ' %', 0, 90],
+    ];
+
+    /**
+     * Zeitsteuerung der Anlage über Modbus, nur lesend. Mit „Cloud-Steuerung“ zeigen die schaltbaren
+     * Cloud-Variablen dasselbe; diese hier gibt es dann nicht.
+     * @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int,6?:string}>
+     */
+    private const MODBUS_WINDOWS = [
+        'window_charge_limit'     => ['WindowChargeLimit', 'Charge up to (system)', 'battery-full', ' %', 0, 120],
+        'window_charge_start1'    => ['WindowChargeStart1', 'Charging window 1 start (system)', '', '', 0, 121, 'clock'],
+        'window_charge_end1'      => ['WindowChargeEnd1', 'Charging window 1 end (system)', '', '', 0, 122, 'clock'],
+        'window_charge_start2'    => ['WindowChargeStart2', 'Charging window 2 start (system)', '', '', 0, 123, 'clock'],
+        'window_charge_end2'      => ['WindowChargeEnd2', 'Charging window 2 end (system)', '', '', 0, 124, 'clock'],
+        'window_discharge_start1' => ['WindowDischargeStart1', 'Discharging window 1 start (system)', '', '', 0, 125, 'clock'],
+        'window_discharge_end1'   => ['WindowDischargeEnd1', 'Discharging window 1 end (system)', '', '', 0, 126, 'clock'],
+        'window_discharge_start2' => ['WindowDischargeStart2', 'Discharging window 2 start (system)', '', '', 0, 127, 'clock'],
+        'window_discharge_end2'   => ['WindowDischargeEnd2', 'Discharging window 2 end (system)', '', '', 0, 128, 'clock'],
+    ];
+
     /** @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int}> nur aus der Cloud, entstehen mit dem ersten Wert */
     private const CLOUD_VARIABLES = [
         'battery_charge_today'      => ['ChargeToday', 'Energy charged today', 'arrow-down', ' kWh', 2, 52],
@@ -83,6 +119,7 @@ class AlphaESSBattery extends IPSModuleStrict
 
         $this->alphaModbusValues(self::MODBUS_VARIABLES, [], !$this->alphaCloudOnly());
         $control = $this->ReadPropertyBoolean('CloudControl');
+        $this->modbusExtras([], $this->alphaCloudOnly());
         foreach (self::CONTROLS as [$ident, $name, $kind, $position]) {
             [$type, $presentation] = match ($kind) {
                 'switch' => [VARIABLETYPE_BOOLEAN, AlphaPresentations::toggle('plug')],
@@ -145,6 +182,31 @@ class AlphaESSBattery extends IPSModuleStrict
         throw new \InvalidArgumentException('Unknown ident ' . $Ident);
     }
 
+    /**
+     * Zusatzwerte und die Zeitsteuerung der Anlage aus Modbus.
+     * @param array<string,mixed> $values
+     */
+    private function modbusExtras(array $values, bool $cloudOnly): void
+    {
+        $this->alphaModbusExtra(self::MODBUS_EXTRA, $values, $cloudOnly);
+        $windows = !$cloudOnly && !$this->ReadPropertyBoolean('CloudControl');
+        $this->alphaModbusExtra(self::MODBUS_WINDOWS, $windows ? $values : [], !$windows);
+        // 0 aus, 1 Laden, 2 Entladen, 3 beides zeitgesteuert (Registerliste)
+        if (!$windows) {
+            $this->MaintainVariable('WindowControl', '', VARIABLETYPE_INTEGER, [], 0, false);
+        } elseif (is_numeric($values['window_control'] ?? null)) {
+            $this->MaintainVariable('WindowControl', $this->Translate('Time control (system)'), VARIABLETYPE_INTEGER, AlphaPresentations::state('clock', [
+                [0, $this->Translate('Off'), AlphaPresentations::GREY],
+                [1, $this->Translate('Charging only'), AlphaPresentations::GREEN],
+                [2, $this->Translate('Discharging only'), AlphaPresentations::ORANGE],
+                [3, $this->Translate('Charging and discharging'), AlphaPresentations::BLUE],
+            ]), 119, true);
+            if ($this->GetValue('WindowControl') !== (int) $values['window_control']) {
+                $this->SetValue('WindowControl', (int) $values['window_control']);
+            }
+        }
+    }
+
     /** @param array<string,mixed> $values */
     private function applyValues(array $values): void
     {
@@ -163,6 +225,7 @@ class AlphaESSBattery extends IPSModuleStrict
             $this->SetValue('State', (int) $values['battery_state']);
         }
         $this->alphaCloudValues(self::CLOUD_VARIABLES, $values);
+        $this->modbusExtras($values, $this->alphaCloudOnly());
         if (!$this->ReadPropertyBoolean('CloudControl')) {
             return;
         }
