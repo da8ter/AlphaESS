@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // Reine Logik: Register, Gateway-Antwort, Zeitraster, Cloud-API und Auftragsliste.
 require __DIR__ . '/bootstrap.php';
-foreach (['AlphaDataFlow', 'AlphaRegisters', 'AlphaModbusGateway', 'AlphaTimeGrid', 'AlphaCloudApi', 'AlphaCloudQueue', 'AlphaEnergy', 'AlphaDispatch'] as $class) {
+foreach (['AlphaDataFlow', 'AlphaRegisters', 'AlphaModbusGateway', 'AlphaTimeGrid', 'AlphaCloudApi', 'AlphaCloudQueue', 'AlphaEnergy', 'AlphaDispatch', 'AlphaFaults'] as $class) {
     require_once __DIR__ . "/../libs/$class.php";
 }
 
@@ -119,6 +119,13 @@ $w = json_decode(AlphaModbusGateway::write(2176, [1, 0, 27000]), true);
 check($w['Function'] === 16 && $w['Address'] === 2176 && $w['Quantity'] === 3 && $w['Data'] === '000100006978', 'Schreibpaket: FC 16, Data als Hex-String');
 check(AlphaModbusGateway::written(pack('Cnn', 16, 2176, 11), 2176, 11) && AlphaModbusGateway::written('1008800003', 2176, 3)
     && !AlphaModbusGateway::written(false, 2176, 11) && !AlphaModbusGateway::written(pack('Cnn', 16, 2176, 10), 2176, 11), 'Bestätigung nur mit passendem Echo');
+
+section('Fehler und Warnungen');
+check(AlphaFaults::faults(0x197F, 0) === '100000 Grid_OVP, 100001 Grid_UVP, 100002 Grid_OFP, 100003 Grid_UFP, 100004 Phase_locked_fault, 100005 BUS_OVP1, 100006 BUS_OVP2, 100008 GFCI_fault, 100011 Over_Temperature, 100012 PV_Reverse',
+    'Fehler 1: Nummer 100000 + Bit, Namen wie im Handbuch');
+check(AlphaFaults::faults(0, 1 << 10 | 1 << 20) === '100042 Output_short_circuit, 100052 Backup_ovp' && AlphaFaults::faults(0, 0) === '', 'Fehler 2: Nummer 100032 + Bit (Handbuch: 100042, 100052)');
+check(AlphaFaults::warnings(0x08020000, 1 << 8) === 'ln_reverse, ems_can_alarm, no_pv_input_alarm' && AlphaFaults::faults(1 << 31, 1 << 31) === '100031 BAT2_charge_OCP, 100063 Zero_ground_fault',
+    'Warnungen als Bitnamen, höchstes Bit');
 
 section('Auftragsliste');
 $s = AlphaCloudQueue::fresh();

@@ -109,9 +109,8 @@ trait AlphaDevice
                 default => [VARIABLETYPE_FLOAT, AlphaPresentations::value($icon, $suffix, $digits), $value],
             };
             $this->MaintainVariable($ident, $this->Translate($name), $type, $presentation, $position, true);
-            if ($this->GetValue($ident) !== $value) {
-                $this->SetValue($ident, $value);
-            }
+            // Immer schreiben: eine neue Variable steht schon auf 0; ein Wert 0 bliebe sonst „nie aktualisiert“.
+            $this->SetValue($ident, $value);
         }
     }
 

@@ -78,7 +78,10 @@
             "Inverter warning code 2": "Wechselrichter-Warncode 2",
             "Inverter fault code 1": "Wechselrichter-Fehlercode 1",
             "Inverter fault code 2": "Wechselrichter-Fehlercode 2",
-            "System fault code": "Anlagen-Fehlercode"
+            "System fault code": "Anlagen-Fehlercode",
+            "Inverter faults": "Wechselrichter-Fehler",
+            "Inverter warnings": "Wechselrichter-Warnungen",
+            "None": "Keine"
         },
         "en": {
             "Alpha ESS Inverter": "Alpha ESS Inverter",
@@ -158,7 +161,10 @@
             "Inverter warning code 2": "Inverter warning code 2",
             "Inverter fault code 1": "Inverter fault code 1",
             "Inverter fault code 2": "Inverter fault code 2",
-            "System fault code": "System fault code"
+            "System fault code": "System fault code",
+            "Inverter faults": "Inverter faults",
+            "Inverter warnings": "Inverter warnings",
+            "None": "None"
         }
     }
 }

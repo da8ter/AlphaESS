@@ -262,9 +262,7 @@ class AlphaESSBattery extends IPSModuleStrict
                 [2, $this->Translate('Discharging only'), AlphaPresentations::ORANGE],
                 [3, $this->Translate('Charging and discharging'), AlphaPresentations::BLUE],
             ]), 119, true);
-            if ($this->GetValue('WindowControl') !== (int) $values['window_control']) {
-                $this->SetValue('WindowControl', (int) $values['window_control']);
-            }
+            $this->SetValue('WindowControl', (int) $values['window_control']);
         }
     }
 

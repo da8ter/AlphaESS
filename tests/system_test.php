@@ -330,6 +330,15 @@ check(World::value($inv, 'InverterTemperature') === 38.2 && World::value($inv, '
     && World::value($inv, 'GridPowerFactor') === -0.95 && World::value($inv, 'GridReactivePower') === -120.0 && World::value($inv, 'PVCapacity') === 9800.0
     && World::value($inv, 'FeedInLimit') === 70.0 && World::value($inv, 'SystemPVEnergy') === 9900.0 && World::value($inv, 'SystemFault') === 0
     && World::value($inv, 'PV1Current') === 4.6 && World::value($inv, 'BackupPower') === 0.0, 'nur Modbus: Wechselrichter-, Netz-, Notstrom- und Anlagenwerte');
+check(World::value($inv, 'InverterFaults') === 'Keine' && World::value($inv, 'InverterWarnings') === 'Keine', 'ohne gesetzte Bits: „Keine“');
+$updated = static fn (int $id, string $ident): int => IPS_GetVariable(World::varId($id, $ident))['VariableUpdated'];
+check($updated($inv, 'SystemFault') > 0 && $updated($inv, 'InverterWarning2') > 0 && $updated($inv, 'PVCapacityACCoupled') > 0 && $updated($bat, 'BatteryFault') > 0,
+    'Werte 0 werden geschrieben, nicht „nie aktualisiert“');
+$gw->set32(1082, 0x197F);
+$gw->set32(1078, 0x08020000);
+Kernel::advance(10);
+check(str_ends_with((string) World::value($inv, 'InverterFaults'), '100011 Over_Temperature, 100012 PV_Reverse') && World::value($inv, 'InverterWarnings') === 'ln_reverse, ems_can_alarm'
+    && World::value($inv, 'InverterFault1') === 0x197F, 'gesetzte Fehler und Warnungen als Text, Zahl bleibt daneben');
 // Zähler der Registerkarte: Bezug 2345,67, Einspeisung 1234,56, PV 9876,5, Laden 432,1, Entladen 321,0
 check(GetValue(World::varId($inv, 'LoadEnergy')) === 10876.51 && GetValue(World::varId($inv, 'SelfConsumption')) === 87.5
     && GetValue(World::varId($inv, 'SelfSufficiency')) === 78.4, 'nur Modbus: Verbrauch, Eigenverbrauch und Autarkie aus den Zählern');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/AlphaDataFlow.php';
 require_once __DIR__ . '/../libs/AlphaPresentations.php';
+require_once __DIR__ . '/../libs/AlphaFaults.php';
 require_once __DIR__ . '/../libs/AlphaDevice.php';
 
 // Wechselrichter einer Alpha-ESS-Anlage: Erzeugung, Netz, Verbrauch. Werte kommen vom System (Modbus oder Cloud).
@@ -190,6 +191,29 @@ class AlphaESSInverter extends IPSModuleStrict
         }
     }
 
+    /**
+     * Gesetzte Fehler- und Warnbits als Text („100012 PV_Reverse“), Nummern laut Installationshandbuch.
+     * @param array<string,mixed> $values
+     */
+    private function faultTexts(array $values, bool $cloudOnly): void
+    {
+        foreach (['InverterFaults' => ['inverter_fault1', 'inverter_fault2', 'Inverter faults', 'circle-exclamation', 155],
+            'InverterWarnings' => ['inverter_warning1', 'inverter_warning2', 'Inverter warnings', 'triangle-exclamation', 156]] as $ident => [$first, $second, $name, $icon, $position]) {
+            if ($cloudOnly) {
+                $this->MaintainVariable($ident, '', VARIABLETYPE_STRING, [], 0, false);
+                continue;
+            }
+            if (!is_numeric($values[$first] ?? null) || !is_numeric($values[$second] ?? null)) {
+                continue;
+            }
+            $text = $ident === 'InverterFaults' ? AlphaFaults::faults((int) $values[$first], (int) $values[$second])
+                : AlphaFaults::warnings((int) $values[$first], (int) $values[$second]);
+            $text = $text === '' ? $this->Translate('None') : $text;
+            $this->MaintainVariable($ident, $this->Translate($name), VARIABLETYPE_STRING, AlphaPresentations::text($icon), $position, true);
+            $this->SetValue($ident, $text);
+        }
+    }
+
     /** @param array<string,mixed> $values */
     private function applyValues(array $values): void
     {
@@ -204,6 +228,7 @@ class AlphaESSInverter extends IPSModuleStrict
             }
         }
         $this->alphaModbusExtra(self::MODBUS_EXTRA, $values, $cloudOnly);
+        $this->faultTexts($values, $cloudOnly);
         foreach (self::VARIABLES as $key => [$ident]) {
             if (!isset($values[$key]) || !is_numeric($values[$key])) {
                 continue;
