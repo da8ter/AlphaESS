@@ -20,6 +20,9 @@ check(World::value($inv, 'PVPower') === 3500.0 && World::value($inv, 'PV1Power')
 check(World::value($inv, 'GridPower') === -500.0 && World::value($inv, 'GridPowerL1') === -400.0 && World::value($inv, 'LoadPower') === 1500.0, 'Netz und Verbrauch');
 check(World::value($inv, 'GridFeedInEnergy') === 1234.56 && World::value($inv, 'GridConsumptionEnergy') === 2345.67 && World::value($inv, 'PVEnergy') === 9876.5, 'Zählerstände');
 check(World::value($inv, 'Frequency') === 50.01 && World::value($inv, 'InverterPower') === 2000.0 && World::value($inv, 'Mode') === 2, 'Frequenz, Wechselrichterleistung, Modus');
+$mode = json_decode((string) World::variable($inv, 'Mode')['presentation']['INTERVALS'], true);
+check(array_column($mode, 'IntervalMinValue') === [0, 1, 2, 3, 4] && $mode[1]['ConstantValue'] === 'Normalbetrieb' && $mode[4]['ConstantValue'] === 'Fehler',
+    'Betriebsmodus als Text: Warten, Normalbetrieb, Notstrom, Bypass, Fehler');
 check(World::value($bat, 'SOC') === 65.5 && World::value($bat, 'Power') === -1500.0 && World::value($bat, 'State') === 1, 'Speicher: SOC, Leistung, lädt');
 check(World::value($bat, 'ChargeEnergy') === 432.1 && World::value($bat, 'DischargeEnergy') === 321.0 && World::value($bat, 'Voltage') === 51.2 && World::value($bat, 'Current') === -10.5,
     'Speicher: Energien, Spannung, Strom');

@@ -59,7 +59,7 @@
             "Inverter current L2": "Wechselrichterstrom L2",
             "Inverter current L3": "Wechselrichterstrom L3",
             "Inverter temperature": "Wechselrichtertemperatur",
-            "Backup power": "Notstromleistung",
+            "Backup power": "Notstrom",
             "Backup power L1": "Notstromleistung L1",
             "Backup power L2": "Notstromleistung L2",
             "Backup power L3": "Notstromleistung L3",
@@ -81,7 +81,11 @@
             "System fault code": "Anlagen-Fehlercode",
             "Inverter faults": "Wechselrichter-Fehler",
             "Inverter warnings": "Wechselrichter-Warnungen",
-            "None": "Keine"
+            "None": "Keine",
+            "Waiting": "Warten",
+            "Normal operation": "Normalbetrieb",
+            "Bypass": "Bypass",
+            "Fault": "Fehler"
         },
         "en": {
             "Alpha ESS Inverter": "Alpha ESS Inverter",
@@ -164,7 +168,11 @@
             "System fault code": "System fault code",
             "Inverter faults": "Inverter faults",
             "Inverter warnings": "Inverter warnings",
-            "None": "None"
+            "None": "None",
+            "Waiting": "Waiting",
+            "Normal operation": "Normal operation",
+            "Bypass": "Bypass",
+            "Fault": "Fault"
         }
     }
 }

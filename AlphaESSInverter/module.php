@@ -173,7 +173,14 @@ class AlphaESSInverter extends IPSModuleStrict
     {
         $keep = !$this->alphaCloudOnly($values);
         $this->alphaModbusValues(self::MODBUS_VARIABLES, $values, $keep);
-        $this->MaintainVariable('Mode', $this->Translate('Operating mode'), VARIABLETYPE_INTEGER, AlphaPresentations::value('circle-info', ''), 80, $keep);
+        // Betriebsmodus laut Registerliste (Note5): 0 Warten, 1 Normalbetrieb, 2 Notstrom, 3 Bypass, 4 Fehler
+        $this->MaintainVariable('Mode', $this->Translate('Operating mode'), VARIABLETYPE_INTEGER, AlphaPresentations::state('circle-info', [
+            [0, $this->Translate('Waiting'), AlphaPresentations::GREY],
+            [1, $this->Translate('Normal operation'), AlphaPresentations::GREEN],
+            [2, $this->Translate('Backup power'), AlphaPresentations::BLUE],
+            [3, $this->Translate('Bypass'), AlphaPresentations::ORANGE],
+            [4, $this->Translate('Fault'), AlphaPresentations::RED],
+        ]), 80, $keep);
         if ($keep && is_numeric($values['inverter_mode'] ?? null)) {
             $this->SetValue('Mode', (int) $values['inverter_mode']);
         }
