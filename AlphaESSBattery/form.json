@@ -8,6 +8,15 @@
         {
             "type": "Label",
             "caption": "Requires the cloud access in the Alpha ESS system. Changes are sent to the cloud after about 20 seconds."
+        },
+        {
+            "type": "CheckBox",
+            "name": "ModbusControl",
+            "caption": "Control the battery via Modbus (dispatch)"
+        },
+        {
+            "type": "Label",
+            "caption": "Works locally without the cloud. Automatic is the normal operation of the system. Any other selection is sent to the system as a command that is valid for 5 minutes and renewed every 2 minutes; if Symcon or the connection fails, the system returns to normal operation by itself. Not available in the mode Cloud only."
         }
     ],
     "actions": [],

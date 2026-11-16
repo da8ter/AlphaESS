@@ -47,6 +47,9 @@ final class FakeModbusGateway
     public function ForwardData(string $json): string|false
     {
         $d = json_decode($json, true);
+        if ((int) $d['Function'] === 16) {
+            return $this->writeRegisters($d);
+        }
         $this->requests[] = ['address' => (int) $d['Address'], 'quantity' => (int) $d['Quantity']];
         if ($this->mode === 'dead' || (int) $d['Function'] !== 3) {
             return false;
@@ -60,5 +63,23 @@ final class FakeModbusGateway
         }
         $answer = pack('CC', 3, strlen($payload)) . $payload;
         return $this->mode === 'hex' ? strtoupper(bin2hex($answer)) : $answer;
+    }
+
+    /** @var list<array{address:int,values:list<int>}> Schreibbefehle in der Reihenfolge des Eingangs */
+    public array $writes = [];
+
+    /** Schreiben wie gemessen: Data als Hex-String, Antwort das Modbus-Echo; „readonly“ lehnt ab wie ein Gerät mit Exception. */
+    private function writeRegisters(array $d): string|false
+    {
+        $data = (string) $d['Data'];
+        if ($this->mode === 'dead' || $this->mode === 'readonly' || !ctype_xdigit($data) || strlen($data) !== 4 * (int) $d['Quantity']) {
+            return false;
+        }
+        $values = array_map('hexdec', str_split($data, 4));
+        $this->writes[] = ['address' => (int) $d['Address'], 'values' => $values];
+        foreach ($values as $i => $value) {
+            $this->registers[(int) $d['Address'] + $i] = $value;
+        }
+        return pack('Cnn', 16, (int) $d['Address'], (int) $d['Quantity']);
     }
 }

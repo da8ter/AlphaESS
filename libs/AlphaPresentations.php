@@ -83,6 +83,24 @@ final class AlphaPresentations
         ];
     }
 
+    /**
+     * Schaltbare Auswahl. Nur dokumentierte Parameter: ICON, OPTIONS (Value, Caption, IconActive, IconValue, Color).
+     * @param list<array{0:int,1:string,2:int}> $rows [Wert, Beschriftung, Farbe]
+     * @return array<string,mixed>
+     */
+    public static function enumeration(string $icon, array $rows): array
+    {
+        $options = [];
+        foreach ($rows as [$value, $caption, $color]) {
+            $options[] = ['Value' => $value, 'Caption' => $caption, 'IconActive' => false, 'IconValue' => '', 'Color' => $color];
+        }
+        return [
+            'PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION,
+            'ICON'         => $icon,
+            'OPTIONS'      => (string) json_encode($options, JSON_UNESCAPED_UNICODE),
+        ];
+    }
+
     /** Uhrzeit ohne Datum, Stunden und Minuten. @return array<string,mixed> */
     public static function clock(): array
     {

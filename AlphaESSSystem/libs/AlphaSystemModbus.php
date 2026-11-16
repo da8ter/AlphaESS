@@ -76,7 +76,10 @@ trait AlphaSystemModbus
         $parts = AlphaRegisters::split(AlphaRegisters::derive($values));
         $extra = $this->energyWithoutCloud($values, $now);
         $this->publish(AlphaDataFlow::KIND_INVERTER, '', 'modbus', $parts['inverter'] + $extra['inverter']);
-        $this->publish(AlphaDataFlow::KIND_BATTERY, '', 'modbus', $parts['battery'] + $extra['battery']);
+        $dispatch = $this->dispatchState();
+        $this->publish(AlphaDataFlow::KIND_BATTERY, '', 'modbus', $parts['battery'] + $extra['battery']
+            + ['dispatch_mode' => $dispatch['mode'], 'dispatch_power' => $dispatch['power'], 'dispatch_soc' => $dispatch['soc']]);
+        $this->dispatchRefresh($now);
     }
 
     /**

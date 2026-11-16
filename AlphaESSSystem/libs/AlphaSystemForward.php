@@ -31,6 +31,9 @@ trait AlphaSystemForward
             case 'GetState':
                 return ['values' => $this->cached((string) ($data['Kind'] ?? ''), (string) ($data['Serial'] ?? '')) + ['cloud_only' => $this->ReadPropertyBoolean('CloudOnly')]];
 
+            case 'Dispatch':
+                return $this->dispatchCommand($data);
+
             case 'ListDevices':
                 return ['wallboxes' => $this->wallboxes(), 'cloud' => $this->cloudConfigured()];
 

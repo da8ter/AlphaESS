@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/AlphaDataFlow.php';
 require_once __DIR__ . '/../libs/AlphaTimeGrid.php';
+require_once __DIR__ . '/../libs/AlphaDispatch.php';
 require_once __DIR__ . '/../libs/AlphaPresentations.php';
 require_once __DIR__ . '/../libs/AlphaDevice.php';
 
@@ -101,6 +102,7 @@ class AlphaESSBattery extends IPSModuleStrict
         parent::Create();
 
         $this->RegisterPropertyBoolean('CloudControl', false);
+        $this->RegisterPropertyBoolean('ModbusControl', false);
         $this->RegisterAttributeBoolean('CloudOnly', false);
 
         foreach (self::VARIABLES as [$ident, $name, $icon, $suffix, $digits, $position]) {
@@ -120,6 +122,7 @@ class AlphaESSBattery extends IPSModuleStrict
         $this->alphaModbusValues(self::MODBUS_VARIABLES, [], !$this->alphaCloudOnly());
         $control = $this->ReadPropertyBoolean('CloudControl');
         $this->modbusExtras([], $this->alphaCloudOnly());
+        $this->dispatchVariables($this->alphaCloudOnly());
         foreach (self::CONTROLS as [$ident, $name, $kind, $position]) {
             [$type, $presentation] = match ($kind) {
                 'switch' => [VARIABLETYPE_BOOLEAN, AlphaPresentations::toggle('plug')],
@@ -162,6 +165,10 @@ class AlphaESSBattery extends IPSModuleStrict
 
     public function RequestAction(string $Ident, mixed $Value): void
     {
+        if (isset(self::DISPATCH[$Ident])) {
+            $this->dispatchAction($Ident, $Value);
+            return;
+        }
         foreach (self::CONTROLS as $key => [$ident, , $kind]) {
             if ($ident !== $Ident) {
                 continue;
@@ -180,6 +187,60 @@ class AlphaESSBattery extends IPSModuleStrict
             return;
         }
         throw new \InvalidArgumentException('Unknown ident ' . $Ident);
+    }
+
+    /** Speichersteuerung über Modbus: Variable => Feld im Befehl an die Anlage */
+    private const DISPATCH = ['Dispatch' => 'Mode', 'DispatchPower' => 'Power', 'DispatchSOC' => 'Soc'];
+
+    /** Die drei Variablen der Speichersteuerung gibt es nur mit „Über Modbus steuern“ und Modbus. */
+    private function dispatchVariables(bool $cloudOnly): void
+    {
+        $keep = $this->ReadPropertyBoolean('ModbusControl') && !$cloudOnly;
+        $this->MaintainVariable('Dispatch', $this->Translate('Battery control'), VARIABLETYPE_INTEGER, AlphaPresentations::enumeration('sliders', [
+            [AlphaDispatch::AUTO, $this->Translate('Automatic (self-consumption)'), AlphaPresentations::GREY],
+            [AlphaDispatch::NO_DISCHARGE, $this->Translate('Do not discharge'), AlphaPresentations::BLUE],
+            [AlphaDispatch::HOLD, $this->Translate('Hold (neither charge nor discharge)'), AlphaPresentations::BLUE],
+            [AlphaDispatch::CHARGE, $this->Translate('Charge from grid'), AlphaPresentations::GREEN],
+            [AlphaDispatch::DISCHARGE, $this->Translate('Discharge'), AlphaPresentations::ORANGE],
+        ]), 200, $keep);
+        $this->MaintainVariable('DispatchPower', $this->Translate('Control power'), VARIABLETYPE_INTEGER,
+            AlphaPresentations::slider('bolt', ' W', 0, 10000, 100), 201, $keep);
+        $this->MaintainVariable('DispatchSOC', $this->Translate('Control target state of charge'), VARIABLETYPE_INTEGER,
+            AlphaPresentations::slider('battery-half', ' %', AlphaDispatch::SOC_MIN, AlphaDispatch::SOC_MAX), 202, $keep);
+        if ($keep) {
+            foreach (array_keys(self::DISPATCH) as $ident) {
+                $this->EnableAction($ident);
+            }
+        }
+    }
+
+    /** @param array<string,mixed> $values */
+    private function dispatchValues(array $values): void
+    {
+        if (array_key_exists('cloud_only', $values)) {
+            $this->dispatchVariables($this->alphaCloudOnly()); // Wechsel des Modus „Nur Cloud“
+        }
+        if (!$this->ReadPropertyBoolean('ModbusControl') || $this->alphaCloudOnly()) {
+            return;
+        }
+        foreach (['Dispatch' => 'dispatch_mode', 'DispatchPower' => 'dispatch_power', 'DispatchSOC' => 'dispatch_soc'] as $ident => $key) {
+            if (is_numeric($values[$key] ?? null) && $this->GetValue($ident) !== (int) $values[$key]) {
+                $this->SetValue($ident, (int) $values[$key]);
+            }
+        }
+    }
+
+    private function dispatchAction(string $ident, mixed $value): void
+    {
+        $command = ['Mode' => $this->GetValue('Dispatch'), 'Power' => $this->GetValue('DispatchPower'), 'Soc' => $this->GetValue('DispatchSOC')];
+        $command[self::DISPATCH[$ident]] = (int) $value;
+        $answer = $this->alphaSend('Dispatch', $command);
+        if (empty($answer['ok'])) {
+            $this->alphaFail($answer, 'The battery control could not be changed');
+            return;
+        }
+        $this->dispatchValues(['dispatch_mode' => $answer['values']['mode'] ?? $command['Mode'],
+            'dispatch_power' => $answer['values']['power'] ?? $command['Power'], 'dispatch_soc' => $answer['values']['soc'] ?? $command['Soc']]);
     }
 
     /**
@@ -226,6 +287,7 @@ class AlphaESSBattery extends IPSModuleStrict
         }
         $this->alphaCloudValues(self::CLOUD_VARIABLES, $values);
         $this->modbusExtras($values, $this->alphaCloudOnly());
+        $this->dispatchValues($values);
         if (!$this->ReadPropertyBoolean('CloudControl')) {
             return;
         }

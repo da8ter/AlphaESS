@@ -57,7 +57,11 @@
             "Income total": "Ertrag gesamt",
             "Income today": "Ertrag heute",
             "Trees planted (equivalent)": "Gepflanzte Bäume (Gegenwert)",
-            "CO2 saved": "CO2 eingespart"
+            "CO2 saved": "CO2 eingespart",
+            "The battery can only be controlled via Modbus": "Der Speicher lässt sich nur über Modbus steuern",
+            "The system is busy, please try again": "Die Anlage ist beschäftigt, bitte erneut versuchen",
+            "The system did not accept the command": "Die Anlage hat den Befehl nicht angenommen",
+            "The battery control command could not be renewed": "Der Steuerbefehl für den Speicher konnte nicht erneuert werden"
         },
         "en": {
             "Alpha ESS System": "Alpha ESS System",
@@ -116,7 +120,11 @@
             "Income total": "Income total",
             "Income today": "Income today",
             "Trees planted (equivalent)": "Trees planted (equivalent)",
-            "CO2 saved": "CO2 saved"
+            "CO2 saved": "CO2 saved",
+            "The battery can only be controlled via Modbus": "The battery can only be controlled via Modbus",
+            "The system is busy, please try again": "The system is busy, please try again",
+            "The system did not accept the command": "The system did not accept the command",
+            "The battery control command could not be renewed": "The battery control command could not be renewed"
         }
     }
 }

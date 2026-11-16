@@ -21,6 +21,36 @@ final class AlphaModbusGateway
         ]);
     }
 
+    /**
+     * Mehrere Register schreiben (FC 16). Gemessen 16.11.2026 (Symcon 9.1): Data als Hex-String der
+     * Registerwerte; ein Binärstring kommt verstümmelt am Gerät an.
+     * @param list<int> $values
+     */
+    public static function write(int $address, array $values): string
+    {
+        $data = '';
+        foreach ($values as $value) {
+            $data .= sprintf('%04X', $value & 0xFFFF);
+        }
+        return (string) json_encode([
+            'DataID'   => AlphaDataFlow::MODBUS_TX,
+            'Function' => 16,
+            'Address'  => $address,
+            'Quantity' => count($values),
+            'Data'     => $data,
+        ]);
+    }
+
+    /** Bestätigt das Gerät das Schreiben? Antwort: Modbus-Echo „16, Adresse, Anzahl“ (binär, Rückfall hex). */
+    public static function written(mixed $response, int $address, int $quantity): bool
+    {
+        if (!is_string($response)) {
+            return false;
+        }
+        $echo = pack('Cnn', 16, $address, $quantity);
+        return $response === $echo || strcasecmp($response, bin2hex($echo)) === 0;
+    }
+
     /** @return string|null Registerinhalt (2n Byte) oder null bei Fehler oder unpassender Länge */
     public static function payload(mixed $response, int $quantity): ?string
     {

@@ -71,6 +71,17 @@ while (true) {
             if ($mode === 'silent') {
                 continue;
             }
+            // Schreiben: FC 6 (ein Register, Wert statt Anzahl) und FC 16 (mehrere); Antwort wie im Standard
+            if ($mode === 'normal' && ($h['fc'] === 6 || $h['fc'] === 16)) {
+                $values = $h['fc'] === 6 ? [$a['qty']] : array_values(unpack('n*', substr($pdu, 5)) ?: []);
+                foreach ($values as $i => $value) {
+                    $reg[$a['addr'] + $i] = $value;
+                }
+                echo date('H:i:s') . ' geschrieben ab ' . $a['addr'] . ': ' . implode(',', $values) . "\n";
+                $body = substr($pdu, 0, 4);
+                fwrite($s, pack('nnnCC', $h['tid'], 0, strlen($body) + 2, $h['unit'], $h['fc']) . $body);
+                continue;
+            }
             $ok = $mode === 'normal' && $h['fc'] === 3 && $a['qty'] >= 1 && $a['qty'] <= 125;
             $payload = '';
             for ($i = 0; $ok && $i < $a['qty']; $i++) {

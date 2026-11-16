@@ -6,6 +6,7 @@ require_once __DIR__ . '/../libs/AlphaClock.php';
 require_once __DIR__ . '/../libs/AlphaDataFlow.php';
 require_once __DIR__ . '/../libs/AlphaRegisters.php';
 require_once __DIR__ . '/../libs/AlphaEnergy.php';
+require_once __DIR__ . '/../libs/AlphaDispatch.php';
 require_once __DIR__ . '/../libs/AlphaModbusGateway.php';
 require_once __DIR__ . '/../libs/AlphaTimeGrid.php';
 require_once __DIR__ . '/../libs/AlphaCloudApi.php';
@@ -15,6 +16,7 @@ require_once __DIR__ . '/../libs/AlphaPresentations.php';
 require_once __DIR__ . '/libs/AlphaSystemModbus.php';
 require_once __DIR__ . '/libs/AlphaSystemCloud.php';
 require_once __DIR__ . '/libs/AlphaSystemForward.php';
+require_once __DIR__ . '/libs/AlphaSystemDispatch.php';
 
 /*
  * Eine Alpha-ESS-Anlage: liest Wechselrichter und Speicher lokal über das Symcon ModBus Gateway,
@@ -28,6 +30,7 @@ class AlphaESSSystem extends IPSModuleStrict
     use AlphaSystemModbus;
     use AlphaSystemCloud;
     use AlphaSystemForward;
+    use AlphaSystemDispatch;
 
     private const MODBUS_DEVICE_ID = 85;
 
@@ -63,6 +66,8 @@ class AlphaESSSystem extends IPSModuleStrict
         $this->RegisterAttributeString('Wallboxes', '[]');
         // Zählerstände zu Tagesbeginn, für die Tageswerte ohne Cloud
         $this->RegisterAttributeString('DayStart', '{}');
+        // gewählte Speichersteuerung (Dispatch), überdauert Neustarts
+        $this->RegisterAttributeString('Dispatch', '{}');
 
         $this->RegisterTimer('Poll', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'Poll\', 0);');
         $this->RegisterTimer('CloudTick', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'CloudTick\', 0);');
@@ -96,6 +101,7 @@ class AlphaESSSystem extends IPSModuleStrict
         $this->SetBuffer('CloudQueue', '');
         $this->SetBuffer('Cfg_charge', '');
         $this->SetBuffer('Cfg_discharge', '');
+        $this->SetBuffer('DispatchSent', '0');
 
         $cloudOnly = $this->ReadPropertyBoolean('CloudOnly');
         $this->SetTimerInterval('Poll', $cloudOnly ? 0 : max(2, $this->ReadPropertyInteger('PollInterval')) * 1000);

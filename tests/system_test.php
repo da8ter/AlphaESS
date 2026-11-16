@@ -360,4 +360,40 @@ IPS_DisconnectInstance($box);
 $try = alphaAction($box, 'Current', 10);
 check(!$try['ok'] && $try['message'] === 'Keine Alpha-ESS-Anlage verbunden' && World::value($box, 'Current') === 0, 'ohne Anlage: eigene Meldung');
 
+section('Speichersteuerung über Modbus (Dispatch)');
+[$sys, $gw] = alphaWorld();
+$bat = alphaDevice(ALPHA_BATTERY, $sys);
+check(!in_array('Dispatch', World::idents($bat), true), 'ohne „Über Modbus steuern“ keine Steuerung');
+IPS_SetProperty($bat, 'ModbusControl', true);
+IPS_ApplyChanges($bat);
+Kernel::advance(10);
+check(World::value($bat, 'Dispatch') === 0 && World::value($bat, 'DispatchPower') === 3000 && World::value($bat, 'DispatchSOC') === 100 && $gw->writes === [],
+    'Start: Automatisch, nichts geschrieben');
+check(World::variable($bat, 'Dispatch')['presentation']['PRESENTATION'] === VARIABLE_PRESENTATION_ENUMERATION && World::variable($bat, 'Dispatch')['action'] === $bat,
+    'Auswahl ist schaltbar');
+check(alphaAction($bat, 'DispatchPower', 5000)['ok'] && alphaAction($bat, 'DispatchSOC', 80)['ok'] && $gw->writes === [] && World::value($bat, 'DispatchPower') === 5000,
+    'Leistung und Ziel im Automatikbetrieb nur merken');
+$a = alphaAction($bat, 'Dispatch', 3);
+check($a['ok'] && World::value($bat, 'Dispatch') === 3 && $gw->writes === [['address' => 2176, 'values' => [1, 0, 27000, 0, 10000, 2, 204, 0, 300, 255, 0]]],
+    'Aus dem Netz laden: sofort geschrieben, 5 kW bis 80 %, gilt 300 s');
+Kernel::advance(60);
+check(count($gw->writes) === 1, 'innerhalb von 2 min keine Wiederholung');
+Kernel::advance(70);
+check(count($gw->writes) === 2 && $gw->writes[1]['values'][0] === 1, 'nach 2 min im Modbus-Takt erneuert');
+check(alphaAction($bat, 'DispatchPower', 2000)['ok'] && count($gw->writes) === 3 && $gw->writes[2]['values'][2] === 30000, 'neue Leistung bei aktiver Steuerung sofort geschrieben');
+IPS_ApplyChanges($sys); // wie ein Neustart: die Wahl bleibt und wird beim nächsten Takt erneuert
+Kernel::advance(10);
+check(count($gw->writes) === 4 && World::value($bat, 'Dispatch') === 3, 'nach Neustart der Anlage-Instanz läuft die Steuerung weiter');
+check(alphaAction($bat, 'Dispatch', 0)['ok'] && $gw->writes[4]['values'] === [0, 0, 32000, 0, 10000, 0, 0, 0, 90, 255, 0], 'Automatisch: Block zurückgesetzt');
+Kernel::advance(300);
+check(count($gw->writes) === 5, 'im Automatikbetrieb keine weiteren Befehle');
+$gw->mode = 'readonly';
+$a = alphaAction($bat, 'Dispatch', 1);
+check(!$a['ok'] && $a['message'] === 'Die Anlage hat den Befehl nicht angenommen' && World::value($bat, 'Dispatch') === 0, 'abgelehnter Befehl: Meldung, Auswahl bleibt');
+$gw->mode = 'normal';
+IPS_SetProperty($sys, 'CloudOnly', true);
+IPS_ApplyChanges($sys);
+check(!in_array('Dispatch', World::idents($bat), true), 'Nur Cloud: keine Steuerung über Modbus');
+check(Kernel::$warnings === [], 'keine Warnungen');
+
 done();

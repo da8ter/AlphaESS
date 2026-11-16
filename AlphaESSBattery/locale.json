@@ -12,7 +12,7 @@
             "Idle": "Ruht",
             "Charging": "Lädt",
             "Discharging": "Entlädt",
-            "Charge from grid": "Laden aus dem Netz",
+            "Charge from grid": "Aus dem Netz laden",
             "Charging window 1 start": "Ladefenster 1 Beginn",
             "Charging window 1 end": "Ladefenster 1 Ende",
             "Charging window 2 start": "Ladefenster 2 Beginn",
@@ -59,7 +59,17 @@
             "Discharging window 2 start (system)": "Entladefenster 2 Beginn (Anlage)",
             "Discharging window 2 end (system)": "Entladefenster 2 Ende (Anlage)",
             "Charging only": "Nur Laden",
-            "Discharging only": "Nur Entladen"
+            "Discharging only": "Nur Entladen",
+            "Control the battery via Modbus (dispatch)": "Speicher über Modbus steuern (Dispatch)",
+            "Works locally without the cloud. Automatic is the normal operation of the system. Any other selection is sent to the system as a command that is valid for 5 minutes and renewed every 2 minutes; if Symcon or the connection fails, the system returns to normal operation by itself. Not available in the mode Cloud only.": "Funktioniert lokal ohne Cloud. „Automatisch“ ist der Normalbetrieb der Anlage. Jede andere Auswahl geht als Befehl an die Anlage, der 5 Minuten gilt und alle 2 Minuten erneuert wird; fallen Symcon oder die Verbindung aus, kehrt die Anlage von selbst in den Normalbetrieb zurück. Im Modus „Nur Cloud“ nicht verfügbar.",
+            "Battery control": "Speichersteuerung",
+            "Automatic (self-consumption)": "Automatisch (Eigenverbrauch)",
+            "Do not discharge": "Nicht entladen",
+            "Hold (neither charge nor discharge)": "Halten (weder laden noch entladen)",
+            "Discharge": "Entladen",
+            "Control power": "Steuerleistung",
+            "Control target state of charge": "Ziel-Ladestand der Steuerung",
+            "The battery control could not be changed": "Die Speichersteuerung konnte nicht geändert werden"
         },
         "en": {
             "Alpha ESS Battery": "Alpha ESS Battery",
@@ -120,7 +130,17 @@
             "Discharging window 2 start (system)": "Discharging window 2 start (system)",
             "Discharging window 2 end (system)": "Discharging window 2 end (system)",
             "Charging only": "Charging only",
-            "Discharging only": "Discharging only"
+            "Discharging only": "Discharging only",
+            "Control the battery via Modbus (dispatch)": "Control the battery via Modbus (dispatch)",
+            "Works locally without the cloud. Automatic is the normal operation of the system. Any other selection is sent to the system as a command that is valid for 5 minutes and renewed every 2 minutes; if Symcon or the connection fails, the system returns to normal operation by itself. Not available in the mode Cloud only.": "Works locally without the cloud. Automatic is the normal operation of the system. Any other selection is sent to the system as a command that is valid for 5 minutes and renewed every 2 minutes; if Symcon or the connection fails, the system returns to normal operation by itself. Not available in the mode Cloud only.",
+            "Battery control": "Battery control",
+            "Automatic (self-consumption)": "Automatic (self-consumption)",
+            "Do not discharge": "Do not discharge",
+            "Hold (neither charge nor discharge)": "Hold (neither charge nor discharge)",
+            "Discharge": "Discharge",
+            "Control power": "Control power",
+            "Control target state of charge": "Control target state of charge",
+            "The battery control could not be changed": "The battery control could not be changed"
         }
     }
 }

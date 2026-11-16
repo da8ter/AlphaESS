@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // Reine Logik: Register, Gateway-Antwort, Zeitraster, Cloud-API und Auftragsliste.
 require __DIR__ . '/bootstrap.php';
-foreach (['AlphaDataFlow', 'AlphaRegisters', 'AlphaModbusGateway', 'AlphaTimeGrid', 'AlphaCloudApi', 'AlphaCloudQueue', 'AlphaEnergy'] as $class) {
+foreach (['AlphaDataFlow', 'AlphaRegisters', 'AlphaModbusGateway', 'AlphaTimeGrid', 'AlphaCloudApi', 'AlphaCloudQueue', 'AlphaEnergy', 'AlphaDispatch'] as $class) {
     require_once __DIR__ . "/../libs/$class.php";
 }
 
@@ -106,6 +106,19 @@ $day = ['pv_energy_today' => 10.0, 'grid_feed_in_today' => 2.0, 'grid_consumptio
 check(AlphaEnergy::todayTotals($day) === ['load_energy_today' => 12.0, 'self_consumption_today' => 80.0, 'self_sufficiency_today' => 58.3], 'Verbrauch, Eigenverbrauch und Autarkie heute');
 check(AlphaEnergy::todayTotals(['pv_energy_today' => 0.0] + $day) === ['load_energy_today' => 2.0, 'self_sufficiency_today' => 0.0]
     && AlphaEnergy::todayTotals(array_slice($day, 1)) === [], 'ohne PV keine Eigenverbrauchsquote, unvollständig ergibt nichts');
+
+section('Dispatch');
+check(AlphaDispatch::registers(AlphaDispatch::AUTO, 5000, 80, 300) === [0, 0, 32000, 0, 10000, 0, 0, 0, 90, 255, 0], 'Automatisch: Block zurückgesetzt, Rest läuft in 90 s aus');
+check(AlphaDispatch::registers(AlphaDispatch::CHARGE, 5000, 80, 300) === [1, 0, 27000, 0, 10000, 2, 204, 0, 300, 255, 0], 'Laden: Modus 2, 32000 − Leistung, Ziel 80 % = 204');
+check(AlphaDispatch::registers(AlphaDispatch::DISCHARGE, 3000, 20, 300) === [1, 0, 35000, 0, 10000, 2, 51, 0, 300, 255, 0], 'Entladen: 32000 + Leistung, Ziel 20 %');
+check(AlphaDispatch::registers(AlphaDispatch::NO_DISCHARGE, 5000, 80, 300)[5] === 1 && AlphaDispatch::registers(AlphaDispatch::HOLD, 5000, 80, 300)[2] === 32000
+    && AlphaDispatch::registers(AlphaDispatch::HOLD, 5000, 80, 300)[5] === 3, 'Nicht entladen = Modus 1, Halten = Modus 3 mit Leistung 0');
+check(AlphaDispatch::registers(AlphaDispatch::CHARGE, 99999, 5, 70000)[2] === 12000 && AlphaDispatch::registers(AlphaDispatch::CHARGE, 1, 100, 70000)[6] === 255
+    && array_slice(AlphaDispatch::registers(AlphaDispatch::CHARGE, 1, 5, 70000), 6, 3) === [25, 1, 4464], 'Grenzen: Leistung ≤ 20 kW, Ziel 10–100 %, Dauer über 16 Bit');
+$w = json_decode(AlphaModbusGateway::write(2176, [1, 0, 27000]), true);
+check($w['Function'] === 16 && $w['Address'] === 2176 && $w['Quantity'] === 3 && $w['Data'] === '000100006978', 'Schreibpaket: FC 16, Data als Hex-String');
+check(AlphaModbusGateway::written(pack('Cnn', 16, 2176, 11), 2176, 11) && AlphaModbusGateway::written('1008800003', 2176, 3)
+    && !AlphaModbusGateway::written(false, 2176, 11) && !AlphaModbusGateway::written(pack('Cnn', 16, 2176, 10), 2176, 11), 'Bestätigung nur mit passendem Echo');
 
 section('Auftragsliste');
 $s = AlphaCloudQueue::fresh();
