@@ -34,7 +34,7 @@ class AlphaESSInverter extends IPSModuleStrict
 
     private const COUNTERS = ['grid_feed_in_energy', 'grid_consumption_energy', 'pv_energy'];
 
-    /** @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int}> nur aus der Cloud, entstehen mit dem ersten Wert */
+    /** @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int}> entstehen mit dem ersten Wert (Phasen auch über Modbus, sonst nur Cloud) */
     private const CLOUD_VARIABLES = [
         'inverter_power_l1'      => ['InverterPowerL1', 'Inverter power L1', 'bolt', ' W', 0, 51],
         'inverter_power_l2'      => ['InverterPowerL2', 'Inverter power L2', 'bolt', ' W', 0, 52],

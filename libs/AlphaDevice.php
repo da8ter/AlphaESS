@@ -114,6 +114,9 @@ trait AlphaDevice
     {
         if ($value > 0.0 && $value >= (float) $this->GetValue($ident)) {
             $this->SetValue($ident, $value);
+            return;
         }
+        // Sonst bleibt der Zähler ohne Spur stehen; so zeigt die Fehlersuche, was verworfen wurde.
+        $this->SendDebug('Counter', $ident . ': ' . $value . ' rejected, kept ' . $this->GetValue($ident), 0);
     }
 }

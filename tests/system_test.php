@@ -295,8 +295,9 @@ section('Ohne Cloud: keine leeren Zusatzvariablen');
 $inv = alphaDevice(ALPHA_INVERTER, $sys);
 $bat = alphaDevice(ALPHA_BATTERY, $sys);
 Kernel::advance(30);
-check(array_intersect(World::idents($inv), ['PVEnergyToday', 'SelfSufficiency', 'InverterPowerL1']) === [] && !in_array('Capacity', World::idents($bat), true)
+check(array_intersect(World::idents($inv), ['PVEnergyToday', 'SelfSufficiency']) === [] && !in_array('Capacity', World::idents($bat), true)
     && !in_array('EmsStatus', World::idents($sys), true), 'nur Modbus: keine Cloud-Variablen');
+check(GetValue(World::varId($inv, 'InverterPowerL1')) === 800.0 && GetValue(World::varId($inv, 'InverterPowerL3')) === 500.0, 'nur Modbus: Wechselrichterleistung je Phase kommt vom Modbus');
 
 section('Nur Cloud ohne Wallbox: Leistungsdaten nur im Cloud-Modus');
 [$sys, $gw] = alphaWorld();

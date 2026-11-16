@@ -40,6 +40,9 @@ final class AlphaRegisters
             'battery_power'            => [294, 'i16', 1.0],
         ],
         'inverter' => [
+            'inverter_power_l1' => [1030, 'i32', 1.0],
+            'inverter_power_l2' => [1032, 'i32', 1.0],
+            'inverter_power_l3' => [1034, 'i32', 1.0],
             'inverter_power' => [1036, 'i32', 1.0],
             'pv1_power'      => [1055, 'u32', 1.0],
             'pv2_power'      => [1059, 'u32', 1.0],
