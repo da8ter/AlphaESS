@@ -44,6 +44,13 @@ final class AlphaRegisters
             'inverter_power_l2' => [1032, 'i32', 1.0],
             'inverter_power_l3' => [1034, 'i32', 1.0],
             'inverter_power' => [1036, 'i32', 1.0],
+            // je String vier Register: Spannung (0,1 V), Strom, Leistung (32 Bit)
+            'pv1_voltage'    => [1053, 'u16', 0.1],
+            'pv2_voltage'    => [1057, 'u16', 0.1],
+            'pv3_voltage'    => [1061, 'u16', 0.1],
+            'pv4_voltage'    => [1065, 'u16', 0.1],
+            'pv5_voltage'    => [1069, 'u16', 0.1],
+            'pv6_voltage'    => [1073, 'u16', 0.1],
             'pv1_power'      => [1055, 'u32', 1.0],
             'pv2_power'      => [1059, 'u32', 1.0],
             'pv3_power'      => [1063, 'u32', 1.0],

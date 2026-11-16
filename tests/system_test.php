@@ -222,7 +222,7 @@ $bat = alphaDevice(ALPHA_BATTERY, $sys);
 IPS_SetProperty($sys, 'CloudOnly', true);
 IPS_ApplyChanges($sys);
 check(World::timer($sys, 'Poll')['interval'] === 0 && World::value($sys, 'ModbusState') === 3, 'kein Modbus-Takt, Zustand „nicht genutzt“');
-check(array_intersect(['Voltage', 'Current'], World::idents($bat)) === [] && array_intersect(['Frequency', 'Mode'], World::idents($inv)) === [],
+check(array_intersect(['Voltage', 'Current'], World::idents($bat)) === [] && array_intersect(['Frequency', 'Mode', 'PV1Voltage'], World::idents($inv)) === [],
     'Spannung, Strom, Netzfrequenz und Betriebsart verschwinden: die Cloud liefert sie nicht');
 $late = alphaDevice(ALPHA_BATTERY, $sys);
 check(!in_array('Voltage', World::idents($late), true) && in_array('SOC', World::idents($late), true), 'ein später angelegter Speicher erfährt den Modus beim Anschluss');
@@ -255,7 +255,7 @@ IPS_SetProperty($sys, 'CloudOnly', false);
 IPS_ApplyChanges($sys);
 check(World::timer($sys, 'Poll')['interval'] === 10000 && World::value($sys, 'ModbusState') === 0, 'zurück auf Modbus: Takt läuft wieder');
 Kernel::advance(10);
-check(World::value($bat, 'Voltage') === 51.2 && World::value($inv, 'Frequency') === 50.01 && World::value($inv, 'Mode') === 2 && Kernel::$warnings === [],
+check(World::value($bat, 'Voltage') === 51.2 && World::value($inv, 'PV1Voltage') === 387.1 && World::value($inv, 'Frequency') === 50.01 && World::value($inv, 'Mode') === 2 && Kernel::$warnings === [],
     'zurück auf Modbus: die Variablen sind wieder da und bekommen Werte');
 
 section('Nur Cloud: alles, was die Cloud liefert');
@@ -309,6 +309,8 @@ Kernel::advance(15);
 check(GetValue(World::varId($inv, 'PVEnergyToday')) === 0.1 && GetValue(World::varId($inv, 'LoadEnergyToday')) === 0.3
     && GetValue(World::varId($inv, 'SelfConsumptionToday')) === 100.0 && GetValue(World::varId($inv, 'SelfSufficiencyToday')) === 33.3,
     'nur Modbus: Verbrauch, Eigenverbrauch und Autarkie heute');
+check(GetValue(World::varId($inv, 'PV1Voltage')) === 387.1 && GetValue(World::varId($inv, 'PV2Voltage')) === 402.2 && !in_array('PV3Voltage', World::idents($inv), true),
+    'nur Modbus: Spannung je eingerichtetem String');
 check(GetValue(World::varId($inv, 'InverterPowerL1')) === 800.0 && GetValue(World::varId($inv, 'InverterPowerL3')) === 500.0, 'nur Modbus: Wechselrichterleistung je Phase kommt vom Modbus');
 
 section('Nur Cloud ohne Wallbox: Leistungsdaten nur im Cloud-Modus');

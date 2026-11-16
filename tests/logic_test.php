@@ -30,6 +30,8 @@ check($inv['inverter_power'] === 2000 && $inv['pv1_power'] === 1800 && $inv['pv2
     'Wechselrichter: Leistung, Strings, Ertrag, Modus (letztes Register des Blocks)');
 check(($inv['inverter_power_l1'] ?? null) === 800 && ($inv['inverter_power_l2'] ?? null) === 700 && ($inv['inverter_power_l3'] ?? null) === 500,
     'Wechselrichter: Leistung je Phase aus 1030, 1032, 1034 (auch ohne Cloud)');
+check(($inv['pv1_voltage'] ?? null) === 387.1 && ($inv['pv2_voltage'] ?? null) === 402.2 && ($inv['pv3_voltage'] ?? null) === 0.0,
+    'Wechselrichter: Spannung je String aus 1053, 1057, … (0,1 V)');
 check(AlphaRegisters::decode('grid', substr($block('grid'), 2)) === [] && AlphaRegisters::decode('nix', '') === [], 'falsche Länge oder unbekannter Block ergibt nichts');
 
 section('Abgeleitete Werte');

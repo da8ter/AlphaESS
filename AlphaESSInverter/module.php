@@ -72,6 +72,7 @@ class AlphaESSInverter extends IPSModuleStrict
             $this->MaintainVariable("PV{$i}Power", sprintf($this->Translate('PV string %d'), $i), VARIABLETYPE_FLOAT,
                 AlphaPresentations::value('solar-panel', ' W'), 10 + $i, $i <= $strings);
         }
+        $this->stringVoltages($this->alphaCloudOnly());
         $this->MaintainVariable('PVMeterPower', $this->Translate('PV power (AC-coupled)'), VARIABLETYPE_FLOAT,
             AlphaPresentations::value('solar-panel', ' W'), 20, $this->ReadPropertyBoolean('PVMeter'));
         $this->modbusOnly([]);
@@ -123,10 +124,26 @@ class AlphaESSInverter extends IPSModuleStrict
         }
     }
 
+    /** Spannung je String gibt es nur über Modbus; im Modus „Nur Cloud“ entfällt sie. */
+    private function stringVoltages(bool $cloudOnly): void
+    {
+        for ($i = 1, $n = $this->strings(); $i <= self::MAX_STRINGS; $i++) {
+            $this->MaintainVariable("PV{$i}Voltage", sprintf($this->Translate('PV string %d voltage'), $i), VARIABLETYPE_FLOAT,
+                AlphaPresentations::value('bolt', ' V', 1), 20 + $i, $i <= $n && !$cloudOnly);
+        }
+    }
+
     /** @param array<string,mixed> $values */
     private function applyValues(array $values): void
     {
         $this->modbusOnly($values);
+        $cloudOnly = $this->alphaCloudOnly();
+        $this->stringVoltages($cloudOnly);
+        for ($i = 1, $n = $cloudOnly ? 0 : $this->strings(); $i <= $n; $i++) {
+            if (is_numeric($values["pv{$i}_voltage"] ?? null)) {
+                $this->SetValue("PV{$i}Voltage", (float) $values["pv{$i}_voltage"]);
+            }
+        }
         foreach (self::VARIABLES as $key => [$ident]) {
             if (!isset($values[$key]) || !is_numeric($values[$key])) {
                 continue;

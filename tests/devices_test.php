@@ -41,7 +41,7 @@ section('Wechselrichter');
 [$sys, $gw] = alphaWorld();
 $inv = alphaDevice(ALPHA_INVERTER, $sys);
 check(World::idents($inv) === ['Frequency', 'GridConsumptionEnergy', 'GridFeedInEnergy', 'GridPower', 'GridPowerL1', 'GridPowerL2', 'GridPowerL3',
-    'InverterPower', 'LoadPower', 'Mode', 'PV1Power', 'PV2Power', 'PVEnergy', 'PVPower'], 'Variablen mit zwei Strings: ' . implode(',', World::idents($inv)));
+    'InverterPower', 'LoadPower', 'Mode', 'PV1Power', 'PV1Voltage', 'PV2Power', 'PV2Voltage', 'PVEnergy', 'PVPower'], 'Variablen mit zwei Strings: ' . implode(',', World::idents($inv)));
 $v = World::variable($inv, 'PVPower');
 check($v['name'] === 'PV-Leistung' && $v['presentation'] === ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'solar-panel', 'SUFFIX' => ' W', 'DIGITS' => 0],
     'PV-Leistung: übersetzter Name, Wertanzeige in Watt');
