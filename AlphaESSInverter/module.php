@@ -45,6 +45,9 @@ class AlphaESSInverter extends IPSModuleStrict
         'load_energy'            => ['LoadEnergy', 'Consumption total', 'house', ' kWh', 1, 66],
         'self_consumption'       => ['SelfConsumption', 'Self-consumption', 'recycle', ' %', 1, 90],
         'self_sufficiency'       => ['SelfSufficiency', 'Self-sufficiency', 'house-circle-check', ' %', 1, 91],
+        'load_energy_today'      => ['LoadEnergyToday', 'Consumption today', 'house', ' kWh', 2, 67],
+        'self_consumption_today' => ['SelfConsumptionToday', 'Self-consumption today', 'recycle', ' %', 1, 92],
+        'self_sufficiency_today' => ['SelfSufficiencyToday', 'Self-sufficiency today', 'house-circle-check', ' %', 1, 93],
     ];
 
     public function Create(): void

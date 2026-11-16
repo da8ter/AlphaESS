@@ -60,6 +60,34 @@ final class AlphaEnergy
     }
 
     /**
+     * Verbrauch, Eigenverbrauch und Autarkie des Tages aus den fünf Tageswerten (Modbus oder Cloud).
+     * Eine Quote fehlt, solange ihr Nenner 0 ist (morgens vor dem ersten PV-Ertrag).
+     * @param array<string,mixed> $t pv_energy_today, grid_feed_in_today, grid_consumption_today, battery_charge_today, battery_discharge_today
+     * @return array<string,float>
+     */
+    public static function todayTotals(array $t): array
+    {
+        $keys = ['pv_energy_today', 'grid_feed_in_today', 'grid_consumption_today', 'battery_charge_today', 'battery_discharge_today'];
+        foreach ($keys as $key) {
+            if (!is_numeric($t[$key] ?? null)) {
+                return [];
+            }
+        }
+        $pv = (float) $t['pv_energy_today'];
+        $feedIn = (float) $t['grid_feed_in_today'];
+        $grid = (float) $t['grid_consumption_today'];
+        $load = max(0.0, $grid - $feedIn + $pv + (float) $t['battery_discharge_today'] - (float) $t['battery_charge_today']);
+        $out = ['load_energy_today' => round($load, 2)];
+        if ($pv > 0.0) {
+            $out['self_consumption_today'] = round(max(0.0, min(100.0, ($pv - $feedIn) / $pv * 100)), 1);
+        }
+        if ($load > 0.0) {
+            $out['self_sufficiency_today'] = round(max(0.0, min(100.0, ($load - $grid) / $load * 100)), 1);
+        }
+        return $out;
+    }
+
+    /**
      * Tageswerte als Abstand zum ersten Zählerstand des Tages. Ein neuer Tag oder ein zurückgesprungener
      * Zähler setzt den Startstand neu.
      * @param array<string,float> $c aus counters()

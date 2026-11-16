@@ -234,7 +234,7 @@ trait AlphaSystemCloud
                 break;
             case 'today':
                 $today = AlphaCloudApi::todayValues($data);
-                $this->publish(AlphaDataFlow::KIND_INVERTER, '', 'cloud', $today['inverter']);
+                $this->publish(AlphaDataFlow::KIND_INVERTER, '', 'cloud', $today['inverter'] + AlphaEnergy::todayTotals($today['inverter'] + $today['battery']));
                 $this->publish(AlphaDataFlow::KIND_BATTERY, '', 'cloud', $today['battery']);
                 // Die Cloud zählt alle Wallboxen zusammen: zuordnen lässt es sich nur bei einer
                 $boxes = $this->wallboxes();

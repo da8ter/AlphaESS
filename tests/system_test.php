@@ -289,6 +289,8 @@ $inv = alphaDevice(ALPHA_INVERTER, $sys);
 Kernel::advance(200);
 check(World::value($inv, 'PVEnergy') === 9876.5 && World::value($inv, 'SelfSufficiency') === 10.14 && World::value($inv, 'PVEnergyToday') === 1.3,
     'PV-Ertrag bleibt beim Modbus-Zähler, Autarkie und Tageswerte kommen dazu');
+check(World::value($inv, 'LoadEnergyToday') === 32.0 && World::value($inv, 'SelfConsumptionToday') === 99.2 && World::value($inv, 'SelfSufficiencyToday') === 4.0,
+    'mit Cloud: Verbrauch, Eigenverbrauch und Autarkie heute aus den Tageswerten der Cloud');
 
 section('Ohne Cloud: keine leeren Zusatzvariablen');
 [$sys, $gw] = alphaWorld();
@@ -301,6 +303,12 @@ check(!in_array('Capacity', World::idents($bat), true) && !in_array('GridChargeT
 check(GetValue(World::varId($inv, 'LoadEnergy')) === 10876.51 && GetValue(World::varId($inv, 'SelfConsumption')) === 87.5
     && GetValue(World::varId($inv, 'SelfSufficiency')) === 78.4, 'nur Modbus: Verbrauch, Eigenverbrauch und Autarkie aus den Zählern');
 check(GetValue(World::varId($inv, 'PVEnergyToday')) === 0.0 && GetValue(World::varId($bat, 'ChargeToday')) === 0.0, 'nur Modbus: Tageswerte beginnen bei 0');
+$gw->set32(1086, 98766);   // PV-Ertrag 9876,5 → 9876,6 kWh
+$gw->set32(18, 234587);    // Netzbezug 2345,67 → 2345,87 kWh
+Kernel::advance(15);
+check(GetValue(World::varId($inv, 'PVEnergyToday')) === 0.1 && GetValue(World::varId($inv, 'LoadEnergyToday')) === 0.3
+    && GetValue(World::varId($inv, 'SelfConsumptionToday')) === 100.0 && GetValue(World::varId($inv, 'SelfSufficiencyToday')) === 33.3,
+    'nur Modbus: Verbrauch, Eigenverbrauch und Autarkie heute');
 check(GetValue(World::varId($inv, 'InverterPowerL1')) === 800.0 && GetValue(World::varId($inv, 'InverterPowerL3')) === 500.0, 'nur Modbus: Wechselrichterleistung je Phase kommt vom Modbus');
 
 section('Nur Cloud ohne Wallbox: Leistungsdaten nur im Cloud-Modus');

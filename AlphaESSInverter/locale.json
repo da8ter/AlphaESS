@@ -28,7 +28,10 @@
             "Grid consumption today": "Netzbezug heute",
             "Consumption total": "Verbrauch gesamt",
             "Self-consumption": "Eigenverbrauch",
-            "Self-sufficiency": "Autarkie"
+            "Self-sufficiency": "Autarkie",
+            "Consumption today": "Verbrauch heute",
+            "Self-consumption today": "Eigenverbrauch heute",
+            "Self-sufficiency today": "Autarkie heute"
         },
         "en": {
             "Alpha ESS Inverter": "Alpha ESS Inverter",
@@ -58,7 +61,10 @@
             "Grid consumption today": "Grid consumption today",
             "Consumption total": "Consumption total",
             "Self-consumption": "Self-consumption",
-            "Self-sufficiency": "Self-sufficiency"
+            "Self-sufficiency": "Self-sufficiency",
+            "Consumption today": "Consumption today",
+            "Self-consumption today": "Self-consumption today",
+            "Self-sufficiency today": "Self-sufficiency today"
         }
     }
 }

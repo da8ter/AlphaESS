@@ -100,6 +100,10 @@ check($t['inverter']['pv_energy_today'] === 5.5 && $t['battery']['battery_charge
 check($t['inverter']['pv_energy_today'] === 0.0 && $next['date'] === '2026-11-17' && $next['counters']['pv_energy'] === 210.0, 'neuer Tag beginnt bei 0');
 [$t, $next] = AlphaEnergy::today(['pv_energy' => 150.0] + $c, $start, '2026-11-16');
 check($t['inverter']['pv_energy_today'] === 0.0 && $next['counters']['pv_energy'] === 150.0, 'zurückgesprungener Zähler setzt den Tagesbeginn neu');
+$day = ['pv_energy_today' => 10.0, 'grid_feed_in_today' => 2.0, 'grid_consumption_today' => 5.0, 'battery_charge_today' => 4.0, 'battery_discharge_today' => 3.0];
+check(AlphaEnergy::todayTotals($day) === ['load_energy_today' => 12.0, 'self_consumption_today' => 80.0, 'self_sufficiency_today' => 58.3], 'Verbrauch, Eigenverbrauch und Autarkie heute');
+check(AlphaEnergy::todayTotals(['pv_energy_today' => 0.0] + $day) === ['load_energy_today' => 2.0, 'self_sufficiency_today' => 0.0]
+    && AlphaEnergy::todayTotals(array_slice($day, 1)) === [], 'ohne PV keine Eigenverbrauchsquote, unvollständig ergibt nichts');
 
 section('Auftragsliste');
 $s = AlphaCloudQueue::fresh();

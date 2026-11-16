@@ -98,6 +98,7 @@ trait AlphaSystemModbus
         if ($json !== $this->ReadAttributeString('DayStart')) {
             $this->WriteAttributeString('DayStart', $json);
         }
-        return ['inverter' => $today['inverter'] + AlphaEnergy::totals($counters), 'battery' => $today['battery']];
+        return ['inverter' => $today['inverter'] + AlphaEnergy::totals($counters) + AlphaEnergy::todayTotals($today['inverter'] + $today['battery']),
+            'battery' => $today['battery']];
     }
 }
