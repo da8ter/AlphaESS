@@ -295,8 +295,12 @@ section('Ohne Cloud: keine leeren Zusatzvariablen');
 $inv = alphaDevice(ALPHA_INVERTER, $sys);
 $bat = alphaDevice(ALPHA_BATTERY, $sys);
 Kernel::advance(30);
-check(array_intersect(World::idents($inv), ['PVEnergyToday', 'SelfSufficiency']) === [] && !in_array('Capacity', World::idents($bat), true)
-    && !in_array('EmsStatus', World::idents($sys), true), 'nur Modbus: keine Cloud-Variablen');
+check(!in_array('Capacity', World::idents($bat), true) && !in_array('GridChargeToday', World::idents($bat), true)
+    && !in_array('EmsStatus', World::idents($sys), true), 'nur Modbus: keine Variablen, die nur die Cloud kennt');
+// Zähler der Registerkarte: Bezug 2345,67, Einspeisung 1234,56, PV 9876,5, Laden 432,1, Entladen 321,0
+check(GetValue(World::varId($inv, 'LoadEnergy')) === 10876.51 && GetValue(World::varId($inv, 'SelfConsumption')) === 87.5
+    && GetValue(World::varId($inv, 'SelfSufficiency')) === 78.4, 'nur Modbus: Verbrauch, Eigenverbrauch und Autarkie aus den Zählern');
+check(GetValue(World::varId($inv, 'PVEnergyToday')) === 0.0 && GetValue(World::varId($bat, 'ChargeToday')) === 0.0, 'nur Modbus: Tageswerte beginnen bei 0');
 check(GetValue(World::varId($inv, 'InverterPowerL1')) === 800.0 && GetValue(World::varId($inv, 'InverterPowerL3')) === 500.0, 'nur Modbus: Wechselrichterleistung je Phase kommt vom Modbus');
 
 section('Nur Cloud ohne Wallbox: Leistungsdaten nur im Cloud-Modus');

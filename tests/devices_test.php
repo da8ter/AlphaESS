@@ -64,12 +64,13 @@ check(json_decode((string) Kernel::callPublic($inv, 'GetCompatibleParents', []),
 
 section('Speicher');
 $bat = alphaDevice(ALPHA_BATTERY, $sys);
-check(World::idents($bat) === ['ChargeEnergy', 'Current', 'DischargeEnergy', 'Power', 'SOC', 'State', 'Voltage'], 'ohne Cloud-Steuerung nur Messwerte');
+check(World::idents($bat) === ['ChargeEnergy', 'ChargeToday', 'Current', 'DischargeEnergy', 'DischargeToday', 'Power', 'SOC', 'State', 'Voltage'],
+    'ohne Cloud-Steuerung nur Messwerte (Tageswerte ohne Cloud aus den Zählern)');
 $state = json_decode((string) World::variable($bat, 'State')['presentation']['INTERVALS'], true);
 check(array_column($state, 'ConstantValue') === ['Ruht', 'Lädt', 'Entlädt'] && array_column($state, 'IntervalMinValue') === [0, 1, 2], 'Zustand als Wertanzeige mit drei beschrifteten Intervallen');
 IPS_SetProperty($bat, 'CloudControl', true);
 IPS_ApplyChanges($bat);
-check(count(World::idents($bat)) === 19, 'mit Cloud-Steuerung zwölf Einstellungen dazu');
+check(count(World::idents($bat)) === 21, 'mit Cloud-Steuerung zwölf Einstellungen dazu');
 $clock = World::variable($bat, 'ChargeStart1');
 check($clock['type'] === VARIABLETYPE_INTEGER && $clock['presentation'] === ['PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME, 'DATE' => 0, 'TIME' => 1] && $clock['action'] === $bat,
     'Fensterzeit: Datum/Uhrzeit ohne Datum, schaltbar');
@@ -81,7 +82,7 @@ $try = alphaAction($bat, 'GridCharge', true);
 check(!$try['ok'] && str_contains($try['message'], 'Cloud-Zugang') && World::value($bat, 'GridCharge') === false, 'ohne Cloud-Zugang scheitert die Einstellung mit Meldung, der Wert bleibt');
 IPS_SetProperty($bat, 'CloudControl', false);
 IPS_ApplyChanges($bat);
-check(count(World::idents($bat)) === 7, 'Cloud-Steuerung aus: Einstellungen wieder weg');
+check(count(World::idents($bat)) === 9, 'Cloud-Steuerung aus: Einstellungen wieder weg');
 
 section('Wallboxen');
 [$sys, $gw] = alphaWorld();

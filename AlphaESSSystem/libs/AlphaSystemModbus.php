@@ -74,7 +74,30 @@ trait AlphaSystemModbus
         $this->setState('ModbusState', 1);
 
         $parts = AlphaRegisters::split(AlphaRegisters::derive($values));
-        $this->publish(AlphaDataFlow::KIND_INVERTER, '', 'modbus', $parts['inverter']);
-        $this->publish(AlphaDataFlow::KIND_BATTERY, '', 'modbus', $parts['battery']);
+        $extra = $this->energyWithoutCloud($values, $now);
+        $this->publish(AlphaDataFlow::KIND_INVERTER, '', 'modbus', $parts['inverter'] + $extra['inverter']);
+        $this->publish(AlphaDataFlow::KIND_BATTERY, '', 'modbus', $parts['battery'] + $extra['battery']);
+    }
+
+    /**
+     * Ohne Cloud-Zugang errechnet die Anlage Verbrauch, Eigenverbrauch, Autarkie und Tageswerte selbst
+     * aus den Zählern. Mit Zugang liefert die Cloud diese Werte; zwei Quellen stritten sonst um eine Variable.
+     * @param array<string,mixed> $values
+     * @return array{inverter:array<string,float>,battery:array<string,float>}
+     */
+    private function energyWithoutCloud(array $values, int $now): array
+    {
+        $none = ['inverter' => [], 'battery' => []];
+        $counters = AlphaEnergy::counters($values);
+        if ($counters === null || $this->cloudConfigured()) {
+            return $none;
+        }
+        $start = json_decode($this->ReadAttributeString('DayStart'), true);
+        [$today, $start] = AlphaEnergy::today($counters, is_array($start) ? $start : [], date('Y-m-d', $now));
+        $json = (string) json_encode($start);
+        if ($json !== $this->ReadAttributeString('DayStart')) {
+            $this->WriteAttributeString('DayStart', $json);
+        }
+        return ['inverter' => $today['inverter'] + AlphaEnergy::totals($counters), 'battery' => $today['battery']];
     }
 }

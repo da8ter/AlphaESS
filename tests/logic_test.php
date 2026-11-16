@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // Reine Logik: Register, Gateway-Antwort, Zeitraster, Cloud-API und Auftragsliste.
 require __DIR__ . '/bootstrap.php';
-foreach (['AlphaDataFlow', 'AlphaRegisters', 'AlphaModbusGateway', 'AlphaTimeGrid', 'AlphaCloudApi', 'AlphaCloudQueue'] as $class) {
+foreach (['AlphaDataFlow', 'AlphaRegisters', 'AlphaModbusGateway', 'AlphaTimeGrid', 'AlphaCloudApi', 'AlphaCloudQueue', 'AlphaEnergy'] as $class) {
     require_once __DIR__ . "/../libs/$class.php";
 }
 
@@ -85,6 +85,21 @@ check(AlphaCloudApi::parse(200, '{"code":7001,"info":"aus info","data":null}')['
     && AlphaCloudApi::parse(200, '{"code":7001}')['error'] === 'Error 7001', 'Fehlertext unbekannter Codes aus msg oder info');
 check(AlphaCloudApi::parse(200, '{"code":6012,"info":"x"}')['error'] === 'The AppID is missing' && AlphaCloudApi::isAuthError(6012), 'fehlende AppID hat einen eigenen Text');
 check(AlphaCloudApi::parse(0, '', 'timeout')['error'] === 'timeout' && !AlphaCloudApi::parse(502, '<html>')['ok'], 'Verbindungsfehler und Nicht-JSON sind Fehler');
+
+section('Energie ohne Cloud');
+$c = ['grid_consumption_energy' => 100.0, 'grid_feed_in_energy' => 40.0, 'pv_energy' => 200.0, 'battery_charge_energy' => 30.0, 'battery_discharge_energy' => 20.0];
+check(AlphaEnergy::counters($c + ['x' => 1]) === $c && AlphaEnergy::counters(['pv_energy' => 0.0] + $c) === null && AlphaEnergy::counters(array_slice($c, 1)) === null,
+    'nur vollständige, positive Zählerstände');
+check(AlphaEnergy::totals($c) === ['load_energy' => 250.0, 'self_sufficiency' => 60.0, 'self_consumption' => 80.0], 'Verbrauch als Bilanz, Autarkie und Eigenverbrauch');
+[$t, $start] = AlphaEnergy::today($c, [], '2026-11-16');
+check($t['inverter']['pv_energy_today'] === 0.0 && $start === ['date' => '2026-11-16', 'counters' => $c], 'erster Lauf merkt den Tagesbeginn');
+[$t, $start] = AlphaEnergy::today(['pv_energy' => 205.5, 'battery_charge_energy' => 31.25] + $c, $start, '2026-11-16');
+check($t['inverter']['pv_energy_today'] === 5.5 && $t['battery']['battery_charge_today'] === 1.25 && $t['inverter']['grid_feed_in_today'] === 0.0 && $start['counters'] === $c,
+    'Tageswert = Abstand zum Tagesbeginn');
+[$t, $next] = AlphaEnergy::today(['pv_energy' => 210.0] + $c, $start, '2026-11-17');
+check($t['inverter']['pv_energy_today'] === 0.0 && $next['date'] === '2026-11-17' && $next['counters']['pv_energy'] === 210.0, 'neuer Tag beginnt bei 0');
+[$t, $next] = AlphaEnergy::today(['pv_energy' => 150.0] + $c, $start, '2026-11-16');
+check($t['inverter']['pv_energy_today'] === 0.0 && $next['counters']['pv_energy'] === 150.0, 'zurückgesprungener Zähler setzt den Tagesbeginn neu');
 
 section('Auftragsliste');
 $s = AlphaCloudQueue::fresh();

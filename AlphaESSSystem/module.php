@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../libs/AlphaClock.php';
 require_once __DIR__ . '/../libs/AlphaDataFlow.php';
 require_once __DIR__ . '/../libs/AlphaRegisters.php';
+require_once __DIR__ . '/../libs/AlphaEnergy.php';
 require_once __DIR__ . '/../libs/AlphaModbusGateway.php';
 require_once __DIR__ . '/../libs/AlphaTimeGrid.php';
 require_once __DIR__ . '/../libs/AlphaCloudApi.php';
@@ -60,6 +61,8 @@ class AlphaESSSystem extends IPSModuleStrict
         $this->RegisterPropertyInteger('CloudConfigInterval', 300);
 
         $this->RegisterAttributeString('Wallboxes', '[]');
+        // Zählerstände zu Tagesbeginn, für die Tageswerte ohne Cloud
+        $this->RegisterAttributeString('DayStart', '{}');
 
         $this->RegisterTimer('Poll', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'Poll\', 0);');
         $this->RegisterTimer('CloudTick', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'CloudTick\', 0);');

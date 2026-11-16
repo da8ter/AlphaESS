@@ -10,6 +10,10 @@
             "caption": "Cloud only reads all values from the Alpha ESS cloud, for systems without Modbus TCP. Fill in the cloud access below. Grid frequency, operating mode, battery voltage and battery current are only available via Modbus; these variables are removed in this mode."
         },
         {
+            "type": "Label",
+            "caption": "Without cloud access (Modbus only), the system calculates total consumption, self-consumption, self-sufficiency and the daily values for PV, grid and battery from the Modbus counters. Inverter and battery losses count as consumption. Only the cloud provides, and without it no longer updates: wallbox, charging and discharging windows, energy charged from the grid today, battery capacity, EMS status, models, PV peak and rated power, income, CO2 and trees."
+        },
+        {
             "type": "ExpansionPanel",
             "caption": "Inverter and battery (Modbus TCP)",
             "expanded": true,
