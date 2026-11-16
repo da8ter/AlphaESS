@@ -25,6 +25,9 @@ final class AlphaRegisters
         'system'   => ['address' => 2256, 'quantity' => 6],
     ];
 
+    /** Bereiche, die sich kaum ändern (Einstellungen, Zeitsteuerung, Systemwerte): seltener lesen */
+    public const SLOW_BLOCKS = ['settings', 'windows', 'system'];
+
     /** @var array<string,array<string,array{0:int,1:string,2:float}>> Block => Wert => [Adresse, Typ, Faktor] */
     private const MAP = [
         'grid' => [

@@ -9,6 +9,8 @@ trait AlphaSystemModbus
     private const MODBUS_BACKOFF = [0, 30, 60, 120];
     /** Ab dieser Dauer gilt ein Fehlversuch als Zeitüberschreitung des Gateways */
     private const MODBUS_SLOW_SECONDS = 1.0;
+    /** Abstand für die selten veränderlichen Bereiche (AlphaRegisters::SLOW_BLOCKS) */
+    private const MODBUS_SLOW_BLOCKS_INTERVAL = 300;
 
     private function pollModbus(): void
     {
@@ -39,7 +41,11 @@ trait AlphaSystemModbus
 
         $values = [];
         $read = 0;
+        $slowDue = $now >= (int) $this->GetBuffer('ModbusSlowAt');
         foreach (AlphaRegisters::BLOCKS as $name => $block) {
+            if (!$slowDue && in_array($name, AlphaRegisters::SLOW_BLOCKS, true)) {
+                continue;
+            }
             $start = microtime(true);
             $answer = @$this->SendDataToParent(AlphaModbusGateway::request($block['address'], $block['quantity']));
             $data = AlphaModbusGateway::payload($answer, $block['quantity']);
@@ -71,6 +77,9 @@ trait AlphaSystemModbus
         }
         $this->SetBuffer('ModbusFails', '0');
         $this->SetBuffer('ModbusRetryAt', '0');
+        if ($slowDue) {
+            $this->SetBuffer('ModbusSlowAt', (string) ($now + self::MODBUS_SLOW_BLOCKS_INTERVAL));
+        }
         $this->setState('ModbusState', 1);
 
         $parts = AlphaRegisters::split(AlphaRegisters::derive($values));

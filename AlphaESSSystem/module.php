@@ -98,6 +98,7 @@ class AlphaESSSystem extends IPSModuleStrict
 
         $this->SetBuffer('ModbusFails', '0');
         $this->SetBuffer('ModbusRetryAt', '0');
+        $this->SetBuffer('ModbusSlowAt', '0');
         $this->SetBuffer('CloudQueue', '');
         $this->SetBuffer('Cfg_charge', '');
         $this->SetBuffer('Cfg_discharge', '');
