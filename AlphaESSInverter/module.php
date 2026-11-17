@@ -173,13 +173,20 @@ class AlphaESSInverter extends IPSModuleStrict
     {
         $keep = !$this->alphaCloudOnly($values);
         $this->alphaModbusValues(self::MODBUS_VARIABLES, $values, $keep);
-        // Betriebsmodus laut Registerliste (Note5): 0 Warten, 1 Normalbetrieb, 2 Notstrom, 3 Bypass, 4 Fehler
+        // Betriebsmodus laut Registerliste (Note5): 0 Warten, 1 Normalbetrieb, 2 Notstrom, 3 Bypass, 4 Fehler,
+        // 5 DC-Betrieb, 6 Selbsttest, 7 Prüfung, 8–10 Firmware-Update (Master, Slave, ARM)
         $this->MaintainVariable('Mode', $this->Translate('Operating mode'), VARIABLETYPE_INTEGER, AlphaPresentations::state('circle-info', [
             [0, $this->Translate('Waiting'), AlphaPresentations::GREY],
             [1, $this->Translate('Normal operation'), AlphaPresentations::GREEN],
             [2, $this->Translate('Backup power'), AlphaPresentations::BLUE],
             [3, $this->Translate('Bypass'), AlphaPresentations::ORANGE],
             [4, $this->Translate('Fault'), AlphaPresentations::RED],
+            [5, $this->Translate('DC mode'), AlphaPresentations::ORANGE],
+            [6, $this->Translate('Self test'), AlphaPresentations::GREY],
+            [7, $this->Translate('Grid check'), AlphaPresentations::GREY],
+            [8, $this->Translate('Firmware update (master)'), AlphaPresentations::BLUE],
+            [9, $this->Translate('Firmware update (slave)'), AlphaPresentations::BLUE],
+            [10, $this->Translate('Firmware update (ARM)'), AlphaPresentations::BLUE],
         ]), 80, $keep);
         if ($keep && is_numeric($values['inverter_mode'] ?? null)) {
             $this->SetValue('Mode', (int) $values['inverter_mode']);

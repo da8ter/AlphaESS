@@ -85,7 +85,13 @@
             "Waiting": "Warten",
             "Normal operation": "Normalbetrieb",
             "Bypass": "Bypass",
-            "Fault": "Fehler"
+            "Fault": "Fehler",
+            "DC mode": "DC-Betrieb",
+            "Self test": "Selbsttest",
+            "Grid check": "Netzprüfung",
+            "Firmware update (master)": "Firmware-Update (Master)",
+            "Firmware update (slave)": "Firmware-Update (Slave)",
+            "Firmware update (ARM)": "Firmware-Update (ARM)"
         },
         "en": {
             "Alpha ESS Inverter": "Alpha ESS Inverter",
@@ -172,7 +178,13 @@
             "Waiting": "Waiting",
             "Normal operation": "Normal operation",
             "Bypass": "Bypass",
-            "Fault": "Fault"
+            "Fault": "Fault",
+            "DC mode": "DC mode",
+            "Self test": "Self test",
+            "Grid check": "Grid check",
+            "Firmware update (master)": "Firmware update (master)",
+            "Firmware update (slave)": "Firmware update (slave)",
+            "Firmware update (ARM)": "Firmware update (ARM)"
         }
     }
 }
