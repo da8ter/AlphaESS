@@ -24,7 +24,7 @@ return (static function (): array {
     // Netzzähler 0x0010–0x0022
     $u32(16, 123456);      // Einspeisung 1234,56 kWh
     $u32(18, 234567);      // Bezug 2345,67 kWh
-    $u16(20, 2301);
+    $u16(20, 230); // Netzspannung in ganzen Volt (gemessen 20.11.2026, SMILE-G3-T6)
     $u16(21, 2302);
     $u16(22, 2303);
     $u16(23, 12);

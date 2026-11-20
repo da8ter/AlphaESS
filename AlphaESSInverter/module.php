@@ -41,9 +41,9 @@ class AlphaESSInverter extends IPSModuleStrict
      * @var array<string,array{0:string,1:string,2:string,3:string,4:int,5:int,6?:string}>
      */
     private const MODBUS_EXTRA = [
-        'grid_voltage_l1'        => ['GridVoltageL1', 'Grid voltage L1', 'plug', ' V', 1, 100],
-        'grid_voltage_l2'        => ['GridVoltageL2', 'Grid voltage L2', 'plug', ' V', 1, 101],
-        'grid_voltage_l3'        => ['GridVoltageL3', 'Grid voltage L3', 'plug', ' V', 1, 102],
+        'grid_voltage_l1'        => ['GridVoltageL1', 'Grid voltage L1', 'plug', ' V', 0, 100],
+        'grid_voltage_l2'        => ['GridVoltageL2', 'Grid voltage L2', 'plug', ' V', 0, 101],
+        'grid_voltage_l3'        => ['GridVoltageL3', 'Grid voltage L3', 'plug', ' V', 0, 102],
         'grid_current_l1'        => ['GridCurrentL1', 'Grid current L1', 'plug', ' A', 1, 103],
         'grid_current_l2'        => ['GridCurrentL2', 'Grid current L2', 'plug', ' A', 1, 104],
         'grid_current_l3'        => ['GridCurrentL3', 'Grid current L3', 'plug', ' A', 1, 105],

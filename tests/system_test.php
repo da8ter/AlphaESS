@@ -336,7 +336,7 @@ check(World::value($bat, 'Capacity') === 15.1 && World::value($bat, 'SOH') === 9
 check(World::value($bat, 'WindowControl') === 1 && World::value($bat, 'WindowChargeLimit') === 90.0
     && World::value($bat, 'WindowChargeStart1') === AlphaTimeGrid::toTimestamp('01:00') && World::value($bat, 'WindowChargeEnd1') === AlphaTimeGrid::toTimestamp('05:00'),
     'nur Modbus: Zeitsteuerung der Anlage lesend');
-check(World::value($inv, 'InverterTemperature') === 38.2 && World::value($inv, 'InverterCurrentL1') === -3.5 && World::value($inv, 'GridVoltageL1') === 230.1
+check(World::value($inv, 'InverterTemperature') === 38.2 && World::value($inv, 'InverterCurrentL1') === -3.5 && World::value($inv, 'GridVoltageL1') === 230.0
     && World::value($inv, 'GridPowerFactor') === -0.95 && World::value($inv, 'GridReactivePower') === -120.0 && World::value($inv, 'PVCapacity') === 9800.0
     && World::value($inv, 'FeedInLimit') === 70.0 && World::value($inv, 'SystemPVEnergy') === 9900.0 && World::value($inv, 'SystemFault') === 0
     && World::value($inv, 'PV1Current') === 4.6 && World::value($inv, 'BackupPower') === 0.0, 'nur Modbus: Wechselrichter-, Netz-, Notstrom- und Anlagenwerte');

@@ -33,9 +33,9 @@ final class AlphaRegisters
         'grid' => [
             'grid_feed_in_energy'     => [16, 'u32', 0.01],
             'grid_consumption_energy' => [18, 'u32', 0.01],
-            'grid_voltage_l1'         => [20, 'u16', 0.1],
-            'grid_voltage_l2'         => [21, 'u16', 0.1],
-            'grid_voltage_l3'         => [22, 'u16', 0.1],
+            'grid_voltage_l1'         => [20, 'u16', 1.0],
+            'grid_voltage_l2'         => [21, 'u16', 1.0],
+            'grid_voltage_l3'         => [22, 'u16', 1.0],
             'grid_current_l1'         => [23, 'i16', 0.1],
             'grid_current_l2'         => [24, 'i16', 0.1],
             'grid_current_l3'         => [25, 'i16', 0.1],
