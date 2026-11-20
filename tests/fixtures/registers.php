@@ -46,7 +46,7 @@ return (static function (): array {
     $u16(256, 512);        // 51,2 V
     $u16(257, -105);       // -10,5 A
     $u16(258, 655);        // 65,5 %
-    $u16(259, 2);          // Speicherstatus
+    $u16(259, 257);        // Speicherstatus
     $u16(263, 3312);       // 3,312 V kleinste Zelle
     $u16(266, 3345);       // 3,345 V größte Zelle
     $u16(269, -15);        // -1,5 °C kälteste Zelle

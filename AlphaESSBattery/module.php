@@ -45,7 +45,6 @@ class AlphaESSBattery extends IPSModuleStrict
         'battery_max_cell_voltage'     => ['MaxCellVoltage', 'Highest cell voltage', 'bolt', ' V', 3, 71],
         'battery_min_cell_temperature' => ['MinCellTemperature', 'Lowest cell temperature', 'temperature-half', ' °C', 1, 72],
         'battery_max_cell_temperature' => ['MaxCellTemperature', 'Highest cell temperature', 'temperature-half', ' °C', 1, 73],
-        'battery_status'               => ['BatteryStatus', 'Battery status code', 'circle-info', '', 0, 80, 'int'],
         'battery_warning'              => ['BatteryWarning', 'Battery warning code', 'triangle-exclamation', '', 0, 81, 'int'],
         'battery_fault'                => ['BatteryFault', 'Battery fault code', 'circle-exclamation', '', 0, 82, 'int'],
         'window_reserve_soc'           => ['ReserveSOC', 'Backup reserve', 'battery-quarter', ' %', 0, 90],
@@ -250,6 +249,7 @@ class AlphaESSBattery extends IPSModuleStrict
     private function modbusExtras(array $values, bool $cloudOnly): void
     {
         $this->alphaModbusExtra(self::MODBUS_EXTRA, $values, $cloudOnly);
+        $this->batteryStatus($values, $cloudOnly);
         $windows = !$cloudOnly && !$this->ReadPropertyBoolean('CloudControl');
         $this->alphaModbusExtra(self::MODBUS_WINDOWS, $windows ? $values : [], !$windows);
         // 0 aus, 1 Laden, 2 Entladen, 3 beides zeitgesteuert (Registerliste)
@@ -264,6 +264,32 @@ class AlphaESSBattery extends IPSModuleStrict
             ]), 119, true);
             $this->SetValue('WindowControl', (int) $values['window_control']);
         }
+    }
+
+    /**
+     * Speicherstatus (Registerliste Note1): oberes Byte Laden, unteres Byte Entladen (0 gesperrt, 1 frei).
+     * Laden = 2 beschreibt die Liste nicht; an einer SMILE-G3-T6 trat es nur bei Netzladung aus fast
+     * leerem Speicher auf (19.11.2026), daher „Ladung angefordert“.
+     * @param array<string,mixed> $values
+     */
+    private function batteryStatus(array $values, bool $cloudOnly): void
+    {
+        if ($cloudOnly) {
+            $this->MaintainVariable('BatteryStatus', '', VARIABLETYPE_INTEGER, [], 0, false);
+            return;
+        }
+        if (!is_numeric($values['battery_status'] ?? null)) {
+            return;
+        }
+        $this->MaintainVariable('BatteryStatus', $this->Translate('Battery status'), VARIABLETYPE_INTEGER, AlphaPresentations::state('circle-info', [
+            [0, $this->Translate('Charging and discharging blocked'), AlphaPresentations::RED],
+            [1, $this->Translate('Discharging only'), AlphaPresentations::ORANGE],
+            [256, $this->Translate('Charging only'), AlphaPresentations::ORANGE],
+            [257, $this->Translate('Charging and discharging allowed'), AlphaPresentations::GREEN],
+            [512, $this->Translate('Charging requested'), AlphaPresentations::BLUE],
+            [513, $this->Translate('Charging requested, discharging allowed'), AlphaPresentations::BLUE],
+        ]), 80, true);
+        $this->SetValue('BatteryStatus', (int) $values['battery_status']);
     }
 
     /** @param array<string,mixed> $values */

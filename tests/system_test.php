@@ -238,7 +238,7 @@ IPS_ApplyChanges($sys);
 check(World::timer($sys, 'Poll')['interval'] === 0 && World::value($sys, 'ModbusState') === 3, 'kein Modbus-Takt, Zustand „nicht genutzt“');
 check(array_intersect(['Voltage', 'Current'], World::idents($bat)) === [] && array_intersect(['Frequency', 'Mode', 'PV1Voltage'], World::idents($inv)) === [],
     'Spannung, Strom, Netzfrequenz und Betriebsart verschwinden: die Cloud liefert sie nicht');
-check(array_intersect(['SOH', 'WindowControl', 'WindowChargeStart1', 'MinCellVoltage'], World::idents($bat)) === []
+check(array_intersect(['SOH', 'WindowControl', 'WindowChargeStart1', 'MinCellVoltage', 'BatteryStatus'], World::idents($bat)) === []
     && array_intersect(['InverterTemperature', 'GridVoltageL1', 'BackupPower', 'PV1Current', 'SystemFault'], World::idents($inv)) === [],
     'die Modbus-Zusatzwerte verschwinden ebenso');
 $late = alphaDevice(ALPHA_BATTERY, $sys);
@@ -336,6 +336,9 @@ check(World::value($bat, 'Capacity') === 15.1 && World::value($bat, 'SOH') === 9
 check(World::value($bat, 'WindowControl') === 1 && World::value($bat, 'WindowChargeLimit') === 90.0
     && World::value($bat, 'WindowChargeStart1') === AlphaTimeGrid::toTimestamp('01:00') && World::value($bat, 'WindowChargeEnd1') === AlphaTimeGrid::toTimestamp('05:00'),
     'nur Modbus: Zeitsteuerung der Anlage lesend');
+$status = json_decode((string) World::variable($bat, 'BatteryStatus')['presentation']['INTERVALS'], true);
+check(World::value($bat, 'BatteryStatus') === 257 && array_column($status, 'IntervalMinValue') === [0, 1, 256, 257, 512, 513]
+    && $status[3]['ConstantValue'] === 'Laden und Entladen frei', 'nur Modbus: Speicherstatus als Text');
 check(World::value($inv, 'InverterTemperature') === 38.2 && World::value($inv, 'InverterCurrentL1') === -3.5 && World::value($inv, 'GridVoltageL1') === 230.0
     && World::value($inv, 'GridPowerFactor') === -0.95 && World::value($inv, 'GridReactivePower') === -120.0 && World::value($inv, 'PVCapacity') === 9800.0
     && World::value($inv, 'FeedInLimit') === 70.0 && World::value($inv, 'SystemPVEnergy') === 9900.0 && World::value($inv, 'SystemFault') === 0
