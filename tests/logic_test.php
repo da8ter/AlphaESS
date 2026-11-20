@@ -126,6 +126,8 @@ check(AlphaFaults::faults(0x197F, 0) === '100000 Grid_OVP, 100001 Grid_UVP, 1000
 check(AlphaFaults::faults(0, 1 << 10 | 1 << 20) === '100042 Output_short_circuit, 100052 Backup_ovp' && AlphaFaults::faults(0, 0) === '', 'Fehler 2: Nummer 100032 + Bit (Handbuch: 100042, 100052)');
 check(AlphaFaults::warnings(0x08020000, 1 << 8) === 'ln_reverse, ems_can_alarm, no_pv_input_alarm' && AlphaFaults::faults(1 << 31, 1 << 31) === '100031 BAT2_charge_OCP, 100063 Zero_ground_fault',
     'Warnungen als Bitnamen, höchstes Bit');
+check(AlphaFaults::batteryFaults(1 << 2 | 1 << 16 | 1 << 20) === 'Circuit breaker open, MOS temperature sensor error, Bit 20'
+    && AlphaFaults::batteryWarnings(1 << 7) === 'Cell low voltage' && AlphaFaults::batteryWarnings(0) === '', 'Speicherfehler und -warnungen als Namen, unbelegte Bits als „Bit n“');
 
 section('Auftragsliste');
 $s = AlphaCloudQueue::fresh();

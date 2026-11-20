@@ -250,6 +250,7 @@ class AlphaESSBattery extends IPSModuleStrict
     {
         $this->alphaModbusExtra(self::MODBUS_EXTRA, $values, $cloudOnly);
         $this->batteryStatus($values, $cloudOnly);
+        $this->faultTexts($values, $cloudOnly);
         $windows = !$cloudOnly && !$this->ReadPropertyBoolean('CloudControl');
         $this->alphaModbusExtra(self::MODBUS_WINDOWS, $windows ? $values : [], !$windows);
         // 0 aus, 1 Laden, 2 Entladen, 3 beides zeitgesteuert (Registerliste)
@@ -290,6 +291,27 @@ class AlphaESSBattery extends IPSModuleStrict
             [513, $this->Translate('Charging requested, discharging allowed'), AlphaPresentations::BLUE],
         ]), 80, true);
         $this->SetValue('BatteryStatus', (int) $values['battery_status']);
+    }
+
+    /**
+     * Fehler- und Warncodes des Speichers als Text; die Codes bleiben als eigene Variablen erhalten.
+     * @param array<string,mixed> $values
+     */
+    private function faultTexts(array $values, bool $cloudOnly): void
+    {
+        foreach (['BatteryFaults' => ['battery_fault', 'Battery faults', 'circle-exclamation', 83],
+            'BatteryWarnings' => ['battery_warning', 'Battery warnings', 'triangle-exclamation', 84]] as $ident => [$key, $name, $icon, $position]) {
+            if ($cloudOnly) {
+                $this->MaintainVariable($ident, '', VARIABLETYPE_STRING, [], 0, false);
+                continue;
+            }
+            if (!is_numeric($values[$key] ?? null)) {
+                continue;
+            }
+            $text = $ident === 'BatteryFaults' ? AlphaFaults::batteryFaults((int) $values[$key]) : AlphaFaults::batteryWarnings((int) $values[$key]);
+            $this->MaintainVariable($ident, $this->Translate($name), VARIABLETYPE_STRING, AlphaPresentations::text($icon), $position, true);
+            $this->SetValue($ident, $text === '' ? $this->Translate('None') : $text);
+        }
     }
 
     /** @param array<string,mixed> $values */

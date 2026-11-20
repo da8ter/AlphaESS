@@ -41,6 +41,36 @@ final class AlphaFaults
         'grid_backup_n_lost', 'bat_num_abnormal', 'grid_phase_order_fault', 'dcv_sample_abnormal', 'blackbox_flash_fault',
         'rtc_fault'];
 
+    /** Speicherfehler (Note4, Spalte EMS3.5/EMS3.6 wie bei den Wechselrichtercodes des SMILE-G3) */
+    private const BATTERY_FAULT = ['Temperature sensor error', 'MOS error', 'Circuit breaker open',
+        'Dial switch mode inconsistent', 'Slave battery communication lost', 'SN missing', 'Master battery communication lost',
+        'Firmware versions inconsistent', 'Multi master error', 'MOS high temperature', 'Insulation fault',
+        'Total voltage abnormal', 'MOS feedback failure', 'Precharge failure', '17823 communication failure',
+        '17841 communication failure', 'MOS temperature sensor error'];
+
+    /** Speicherwarnungen (Note28, Spalte EMS3.5/EMS3.6) */
+    private const BATTERY_WARNING = ['Temperature imbalance', 'Over temperature', 'Discharge low temperature',
+        'Charge low temperature', 'Discharge over current', 'Charge over current', 'Cell over voltage', 'Cell low voltage',
+        'sw_inconsistence', 'mos_temperature_sensor_error', 'soc_inconsistence', 'bms_sci_lost', 'bms_fan_err'];
+
+    /** Gesetzte Speicherfehler als Namen, unbelegte Bits als „Bit n“; leer ohne Fehler. */
+    public static function batteryFaults(int $mask): string
+    {
+        return self::names($mask, self::BATTERY_FAULT);
+    }
+
+    /** Gesetzte Speicherwarnungen als Namen, unbelegte Bits als „Bit n“; leer ohne Warnung. */
+    public static function batteryWarnings(int $mask): string
+    {
+        return self::names($mask, self::BATTERY_WARNING);
+    }
+
+    /** @param list<string> $names */
+    private static function names(int $mask, array $names): string
+    {
+        return implode(', ', array_map(static fn (int $bit): string => $names[$bit] ?? 'Bit ' . $bit, self::bits($mask)));
+    }
+
     /** Gesetzte Fehler als „100012 PV_Reverse, …“, leer ohne Fehler. */
     public static function faults(int $fault1, int $fault2): string
     {
