@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/AlphaPresentations.php';
+require_once __DIR__ . '/AlphaTimeGrid.php';
+
 // Gemeinsamer Teil der Geräteinstanzen: Anschluss an das System, Empfang und Befehle.
 trait AlphaDevice
 {

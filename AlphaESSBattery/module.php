@@ -6,6 +6,7 @@ require_once __DIR__ . '/../libs/AlphaDataFlow.php';
 require_once __DIR__ . '/../libs/AlphaTimeGrid.php';
 require_once __DIR__ . '/../libs/AlphaDispatch.php';
 require_once __DIR__ . '/../libs/AlphaPresentations.php';
+require_once __DIR__ . '/../libs/AlphaFaults.php';
 require_once __DIR__ . '/../libs/AlphaDevice.php';
 
 /*

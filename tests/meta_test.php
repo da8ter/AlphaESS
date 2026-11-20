@@ -125,4 +125,33 @@ foreach (glob($lib . '/{*,*/libs}/*.php', GLOB_BRACE) as $file) {
 $icons = array_unique($icons);
 check($icons !== [] && array_filter($icons, static fn(string $i): bool => preg_match('/^[a-z]+(-[a-z]+)*$/', $i) !== 1) === [], 'Icons sind Font-Awesome-Namen in Kleinschreibung: ' . implode(' ', $icons));
 
+// Jedes Modul lädt in Symcon nur, was es selbst per require_once erreicht (der Prüfstand lädt alles vorab).
+$missing = [];
+foreach (glob($lib . '/*/module.php') as $module) {
+    $seen = [];
+    $queue = [realpath($module)];
+    while ($queue !== []) {
+        $file = array_shift($queue);
+        if (isset($seen[$file])) {
+            continue;
+        }
+        $seen[$file] = true;
+        preg_match_all("#require_once __DIR__ \. '([^']+)'#", (string) file_get_contents($file), $r);
+        foreach ($r[1] as $rel) {
+            $queue[] = (string) realpath(dirname($file) . $rel);
+        }
+    }
+    $loaded = array_map(static fn(string $f): string => basename($f, '.php'), array_keys($seen));
+    foreach (array_keys($seen) as $file) {
+        preg_match_all('/\b(?:new |use )?(Alpha[A-Z]\w+)(?:::|\(|;)/', (string) file_get_contents($file), $c);
+        foreach (array_unique($c[1]) as $class) {
+            $known = glob($lib . '/{libs,*/libs}/' . $class . '.php', GLOB_BRACE) !== [];
+            if ($known && !in_array($class, $loaded, true)) {
+                $missing[] = basename(dirname($module)) . ': ' . $class;
+            }
+        }
+    }
+}
+check($missing === [], 'jedes Modul bindet die Klassen ein, die es nutzt: ' . implode(', ', array_unique($missing)));
+
 done();
